@@ -1,5 +1,6 @@
 import tactic
 
+@[derive decidable_eq]
 inductive B : Type
 | O : B
 | I  : B
@@ -68,7 +69,7 @@ def to_nat : B → ℕ
 
 end B
 
-
+@[derive decidable_eq]
 inductive BW : ℕ → Type
 | nil {} : BW nat.zero
 | cons {n : ℕ} (b : B) (bw : BW n) : BW (nat.succ n)
