@@ -102,6 +102,16 @@ begin
     }
 end
 
+lemma distance_neq_between_zero_n : ∀ (x y : BW n), x ≠ y → 1 ≤ d(x,y) ∧ d(x,y) ≤ n :=
+begin
+  intros x y hneq,
+  have h₁ : 0 ≤ d(x,y) ∧ d(x,y) ≤ n, from distance_between_zero_n x y,
+  have h₂ : d(x,y) ≠ 0, from λ (heq : d(x,y) = 0), absurd (distance_zero_eq x y heq) hneq,
+  split,
+    {apply nat.pos_of_ne_zero h₂},
+    {exact h₁.right}
+end
+
 theorem distance_triangle_ineq : ∀ (x y z : BW n), d(x,y) ≤ d(x,z) + d(z,y) :=
 begin
 intros,
