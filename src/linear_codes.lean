@@ -81,22 +81,41 @@ theorem t_error_correcting_iff_min_distance_gte (t : ℕ) :
     ↔ min_distance BLC.C BLC.card_gte ≥ 2 * t + 1 :=
 begin
   split,
-    {sorry},
+    {intro h₁,
+    by_contradiction h₂,
+    simp at h₂,
+    have h₃ : ∃ (c₁ c₂ ∈ BLC.C), c₁ ≠ c₂ ∧ d(c₁,c₂) = min_distance BLC.C BLC.card_gte,
+    from min_distance_pair,
+    rcases h₃ with ⟨c, c', hc, hc', ⟨hneq, h_dist_eq_min⟩⟩,
+    have h₄ : d(c,c') ≤ 2 * t, by linarith,
+    have h₅ : d(c, c') ≥ t + 1, 
+    by {
+      specialize h₁ c hc c',
+      by_contradiction h',
+      simp at h',
+      have h'' : d(c,c') ≤ t, from nat.le_of_lt_succ h',
+      rw hamming.distance_symmetric at h'',
+      specialize h₁ h'' c' hc' hneq,
+      have : d(c',c') = 0, from hamming.eq_distance_zero c' c' rfl,
+      rw this at h₁,
+      simp at h₁,
+      exact h₁,
+    },
+    sorry
+    },
     {intro h,
-    intros c hc x h_dist_lte_t c' hc' h_c_neq_c',
+    intros c hc x h_dist_le_t c' hc' h_c_neq_c',
     have h₁ : d(c,c') ≥ min_distance BLC.C BLC.card_gte, 
     from dist_neq_codewords_gt_min_distance c c' hc hc' h_c_neq_c',
     have h₂ : d(c,c') ≥ 2 * t + 1, by linarith,
-    have h₃ : d(c,x) ≤ d(c,c') + d(c',x), from hamming.distance_triangle_ineq c x c',
-    have h₄ : d(c',x) > d(x,c), 
-    calc d(c',x) ≥ d(c,x) - d(c,c')     : by {simp, exact nat.sub_le_left_of_le_add h₃}
-    ...          ≥ d(c,x) - (2 * t + 1) : by sorry
-    ...          ≥ (2 * t + 1) - t      : by sorry
-    ...          = 2 * t + (1 - t)      : by sorry
-    ...          = t + 1                : by sorry
+    have h₃ : d(c,c') ≤ d(c,x) + d(x,c'), from hamming.distance_triangle_ineq c c' x,
+    calc d(x,c') ≥ d(c,c') - d(c,x)     : by {simp, exact nat.sub_le_left_of_le_add h₃}
+    ...          ≥ (2 * t + 1) - d(c,x) : by {simp, exact nat.sub_le_sub_right h₂ d(c,x)}
+    ...          ≥ (2 * t + 1) - t      : by {simp, rw hamming.distance_symmetric, 
+                                              exact (2 * t + 1).sub_le_sub_left h_dist_le_t}
+    ...          = (t + t + 1) - t      : by ring
+    ...          = t + 1                : by {rw nat.add_assoc, simp}
     ...          > d(x,c)               : by linarith,
-    rw hamming.distance_symmetric at h₄,
-    exact h₄,
     }
 end
 
