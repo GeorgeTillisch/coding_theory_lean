@@ -102,7 +102,7 @@ begin
     }
 end
 
-lemma distance_neq_between_zero_n : ∀ (x y : BW n), x ≠ y → 1 ≤ d(x,y) ∧ d(x,y) ≤ n :=
+lemma distance_neq_between_one_n : ∀ (x y : BW n), x ≠ y → 1 ≤ d(x,y) ∧ d(x,y) ≤ n :=
 begin
   intros x y hneq,
   have h₁ : 0 ≤ d(x,y) ∧ d(x,y) ≤ n, from distance_between_zero_n x y,
