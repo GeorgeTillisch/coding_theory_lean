@@ -61,7 +61,7 @@ begin
     have : ∃ (c₁ c₂ ∈ C), c₁ ≠ c₂ ∧ d(c₁,c₂) = d(C), from min_distance_pair,
     rcases this with ⟨x, y, hx, hy, ⟨hneq, h_dist_eq_min⟩⟩,
     have h_lte_s : d(x,y) ≤ s, by linarith,
-    have h_gte_1 : d(x,y) ≥ 1, from (hamming.distance_neq_between_zero_n x y hneq).left,
+    have h_gte_1 : d(x,y) ≥ 1, from (hamming.distance_neq_between_one_n x y hneq).left,
     existsi [x, y],
     exact ⟨hy, h_gte_1, h_lte_s, hx⟩,
     },
@@ -74,6 +74,28 @@ begin
       from dist_neq_codewords_gt_min_distance x c hx hc heq,
       linarith,}
     },
+end
+
+
+def change_t_disagreements : Π {n : ℕ}, ℕ → BW n → BW n → BW n
+| _ _     nil         nil       := nil
+| _ 0     (xhd::ᴮxtl) _         := xhd::ᴮxtl
+| _ (t+1) (O::ᴮxtl)   (O::ᴮytl) :=   O::ᴮ(change_t_disagreements t.succ xtl ytl)
+| _ (t+1) (I::ᴮxtl)   (I::ᴮytl) :=   I::ᴮ(change_t_disagreements t.succ xtl ytl)
+| _ (t+1) (O::ᴮxtl)   (I::ᴮytl) :=   I::ᴮ(change_t_disagreements t      xtl ytl)
+| _ (t+1) (I::ᴮxtl)   (O::ᴮytl) :=   O::ᴮ(change_t_disagreements t      xtl ytl)
+
+
+lemma dist_change_t_disagreements_first_arg {n : ℕ} (t : ℕ) (h₁ : 0 < t) (x y : BW n) (h₂ : t < d(x,y)) : 
+  d(x, change_t_disagreements t x y) = t :=
+begin
+  sorry
+end
+
+lemma dist_change_t_disagreements_second_arg {n : ℕ} (t : ℕ) (x y : BW n) :
+  d(y, change_t_disagreements t x y) = d(x,y) - t :=
+begin
+  sorry
 end
 
 theorem t_error_correcting_iff_min_distance_gte (t : ℕ) :
@@ -101,7 +123,30 @@ begin
       simp at h₁,
       exact h₁,
     },
-    sorry
+    have h₆ : ∃ (x : BW n), 1 ≤ d(x,c') ∧ d(x,c') ≤ d(x,c) ∧ d(x,c) = t,
+    by {
+      use change_t_disagreements t c c',
+      have h_d₀ : 1 ≤ d(c,c') ∧ d(c,c') ≤ n, from hamming.distance_neq_between_one_n c c' hneq,
+      have h_d₁ : d(c, change_t_disagreements t c c') = t,
+      by {apply dist_change_t_disagreements_first_arg; linarith},
+      have h_d₂ : d(c', change_t_disagreements t c c') = d(c,c') - t,
+      by {apply dist_change_t_disagreements_second_arg},
+      rw [hamming.distance_symmetric _ c, hamming.distance_symmetric _ c'],
+      split,
+        {calc d(c',change_t_disagreements t c c') ≥ d(c,c') - t : by linarith
+        ...                                       ≥ t + 1 - t   : by exact nat.sub_le_sub_right h₅ t
+        ...                                       = 1           : by simp,},
+        split,
+        {rw [h_d₁, h_d₂], 
+        apply nat.sub_le_left_iff_le_add.mpr,
+        conv {congr, skip, ring},
+        exact h₄,},
+        {linarith}
+    },
+    rcases h₆ with ⟨x, ⟨h_dxgt1, h_dxc'_le_dxc, h_dxc_eq_t⟩⟩,
+    have h_dxc_le_t : d(x,c) ≤ t, by linarith,
+    specialize h₁ c hc x h_dxc_le_t c' hc' hneq,
+    linarith,
     },
     {intro h,
     intros c hc x h_dist_le_t c' hc' h_c_neq_c',
@@ -171,3 +216,7 @@ def hamming74Code : binary_linear_code 7 4 3 :=
 }
 
 #eval d(hamming74Code)
+#eval d(ᴮ[I,I,O,I,O,O,I],ᴮ[O,I,O,I,O,I,O])
+def c1 := binary_linear_code.change_t_disagreements 2 ᴮ[I,I,O,I,O,O,I] ᴮ[O,I,O,I,O,I,O]
+#eval d(ᴮ[I,I,O,I,O,O,I],c1)
+#eval d(ᴮ[O,I,O,I,O,I,O],c1)
