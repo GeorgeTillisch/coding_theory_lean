@@ -5,31 +5,33 @@ import algebra.module.submodule
 
 open B BW
 
-def min_distance {n : ℕ} (C : finset (BW n)) (h_card : C.card ≥ 2) : ℕ :=
-  finset.min' (finset.image (λ (x : BW n × BW n), d(x.fst, x.snd)) C.off_diag)
+structure binary_linear_code (n m d : ℕ) :=
+  (cws : finset (BW n))
+  (card_gte : cws.card ≥ 2)
+  (is_subspace : subspace B (BW n))
+
+namespace binary_linear_code
+
+instance : Π {n m d : ℕ}, has_mem (BW n) (binary_linear_code n m d) :=
+λ n m d, ⟨λ (x : BW n), λ (C : binary_linear_code n m d), x ∈ C.cws⟩
+
+def min_distance {n m d : ℕ} (C : binary_linear_code n m d) : ℕ :=
+  finset.min' (finset.image (λ (x : BW n × BW n), d(x.fst, x.snd)) C.cws.off_diag)
   begin
-    have : ∃ (x y : BW n), x ∈ C ∧ y ∈ C ∧ x ≠ y, from finset.one_lt_card_iff.mp h_card,
-    simp,
-    rw finset.nonempty,
-    simp,
+    have : ∃ (x y : BW n), x ∈ C ∧ y ∈ C ∧ x ≠ y, 
+    from finset.one_lt_card_iff.mp C.card_gte,
+    simp, rw finset.nonempty, simp,
     rcases this with ⟨x, y, ⟨hx, hy, hxy⟩⟩,
     existsi [x, hx, y, hy],
     exact hxy,
   end
 
+notation `d(` C `)` := min_distance C
 
-structure binary_linear_code (n m d : ℕ) :=
-  (C : finset (BW n))
-  (card_gte : C.card ≥ 2)
-  (min_distance_is_d : min_distance C card_gte = d)
-  (is_subspace : subspace B (BW n))
-
-namespace binary_linear_code
-
-variables {n m d : ℕ} {BLC : binary_linear_code n m d}
+variables {n m d : ℕ} {C : binary_linear_code n m d}
 
 lemma dist_neq_codewords_gt_min_distance:
-  ∀ (c₁ c₂ ∈ BLC.C), c₁ ≠ c₂ → min_distance BLC.C BLC.card_gte ≤ d(c₁,c₂):=
+  ∀ (c₁ c₂ ∈ C), c₁ ≠ c₂ → d(C) ≤ d(c₁,c₂):=
 begin
   intros c₁ c₂ hc₁ hc₂ hneq,
   unfold min_distance,
@@ -39,10 +41,9 @@ begin
   exact ⟨⟨hc₁, hc₂, hneq⟩, rfl⟩,
 end
 
-lemma min_distance_pair : ∃ (c₁ c₂ ∈ BLC.C), c₁ ≠ c₂ ∧ d(c₁,c₂) = min_distance BLC.C BLC.card_gte :=
+lemma min_distance_pair : ∃ (c₁ c₂ ∈ C), c₁ ≠ c₂ ∧ d(c₁,c₂) = d(C) :=
 begin
-  have h_mem : min_distance BLC.C BLC.card_gte ∈ 
-    (finset.image (λ (x : BW n × BW n), d(x.fst, x.snd)) BLC.C.off_diag),
+  have h_mem : d(C) ∈ (finset.image (λ (x : BW n × BW n), d(x.fst, x.snd)) C.cws.off_diag),
   by {rw min_distance, apply finset.min'_mem},
   simp at h_mem,
   rcases h_mem with ⟨x, y, ⟨hx, hy, hneq⟩, h_dist⟩,
@@ -51,14 +52,13 @@ begin
 end
 
 theorem s_error_detecting_iff_min_distance_gt_s (s : ℕ) : 
-  (∀ (x : BW n) (c ∈ BLC.C), d(x,c) ≥ 1 ∧ d(x,c) ≤ s → x ∉ BLC.C) 
-    ↔ min_distance BLC.C BLC.card_gte > s :=
+  (∀ (x : BW n) (c ∈ C), d(x,c) ≥ 1 ∧ d(x,c) ≤ s → x ∉ C) ↔ d(C) > s :=
 begin
   split,
     {contrapose,
     simp,
     intro h_min_dist,
-    have : ∃ (c₁ c₂ ∈ BLC.C), c₁ ≠ c₂ ∧ d(c₁,c₂) = min_distance BLC.C BLC.card_gte, from min_distance_pair,
+    have : ∃ (c₁ c₂ ∈ C), c₁ ≠ c₂ ∧ d(c₁,c₂) = d(C), from min_distance_pair,
     rcases this with ⟨x, y, hx, hy, ⟨hneq, h_dist_eq_min⟩⟩,
     have h_lte_s : d(x,y) ≤ s, by linarith,
     have h_gte_1 : d(x,y) ≥ 1, from (hamming.distance_neq_between_zero_n x y hneq).left,
@@ -70,21 +70,21 @@ begin
     by_cases heq : x = c,
       {have h_dxc_eq_zero : d(x,c) = 0, from hamming.eq_distance_zero x c heq,
       linarith},
-      {have : d(x,c) ≥ min_distance BLC.C BLC.card_gte, 
+      {have : d(x,c) ≥ d(C), 
       from dist_neq_codewords_gt_min_distance x c hx hc heq,
       linarith,}
     },
 end
 
 theorem t_error_correcting_iff_min_distance_gte (t : ℕ) :
-  (∀ (c ∈ BLC.C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ BLC.C), c ≠ c' → d(x,c) < d(x,c'))))
-    ↔ min_distance BLC.C BLC.card_gte ≥ 2 * t + 1 :=
+  (∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c'))))
+    ↔ d(C) ≥ 2 * t + 1 :=
 begin
   split,
     {intro h₁,
     by_contradiction h₂,
     simp at h₂,
-    have h₃ : ∃ (c₁ c₂ ∈ BLC.C), c₁ ≠ c₂ ∧ d(c₁,c₂) = min_distance BLC.C BLC.card_gte,
+    have h₃ : ∃ (c₁ c₂ ∈ C), c₁ ≠ c₂ ∧ d(c₁,c₂) = d(C),
     from min_distance_pair,
     rcases h₃ with ⟨c, c', hc, hc', ⟨hneq, h_dist_eq_min⟩⟩,
     have h₄ : d(c,c') ≤ 2 * t, by linarith,
@@ -105,7 +105,7 @@ begin
     },
     {intro h,
     intros c hc x h_dist_le_t c' hc' h_c_neq_c',
-    have h₁ : d(c,c') ≥ min_distance BLC.C BLC.card_gte, 
+    have h₁ : d(c,c') ≥ d(C), 
     from dist_neq_codewords_gt_min_distance c c' hc hc' h_c_neq_c',
     have h₂ : d(c,c') ≥ 2 * t + 1, by linarith,
     have h₃ : d(c,c') ≤ d(c,x) + d(x,c'), from hamming.distance_triangle_ineq c c' x,
@@ -145,9 +145,8 @@ def H74C : finset (BW 7) := {
 
 def hamming74Code : binary_linear_code 7 4 3 :=
 {
-  C := H74C,
+  cws := H74C,
   card_gte := by {have : H74C.card = 16, from rfl, linarith},
-  min_distance_is_d := rfl,
   is_subspace := {
     carrier := H74C,
     zero_mem' := by {simp, left, refl},
@@ -171,4 +170,4 @@ def hamming74Code : binary_linear_code 7 4 3 :=
   },
 }
 
-#eval min_distance hamming74Code.C hamming74Code.card_gte
+#eval d(hamming74Code)
