@@ -79,24 +79,52 @@ end
 
 def change_t_disagreements : Π {n : ℕ}, ℕ → BW n → BW n → BW n
 | _ _     nil         nil       := nil
-| _ 0     (xhd::ᴮxtl) _         := xhd::ᴮxtl
-| _ (t+1) (O::ᴮxtl)   (O::ᴮytl) :=   O::ᴮ(change_t_disagreements t.succ xtl ytl)
-| _ (t+1) (I::ᴮxtl)   (I::ᴮytl) :=   I::ᴮ(change_t_disagreements t.succ xtl ytl)
-| _ (t+1) (O::ᴮxtl)   (I::ᴮytl) :=   I::ᴮ(change_t_disagreements t      xtl ytl)
-| _ (t+1) (I::ᴮxtl)   (O::ᴮytl) :=   O::ᴮ(change_t_disagreements t      xtl ytl)
+| _ 0     (xhd::ᴮxtl) (_::ᴮytl) := xhd::ᴮxtl
+| _ t     (O::ᴮxtl)   (O::ᴮytl) :=   O::ᴮ(change_t_disagreements t xtl ytl)
+| _ t     (I::ᴮxtl)   (I::ᴮytl) :=   I::ᴮ(change_t_disagreements t xtl ytl)
+| _ (t+1) (O::ᴮxtl)   (I::ᴮytl) :=   I::ᴮ(change_t_disagreements t xtl ytl)
+| _ (t+1) (I::ᴮxtl)   (O::ᴮytl) :=   O::ᴮ(change_t_disagreements t xtl ytl)
 
+lemma dist_change_t_disagreements_first_arg : 
+  Π {n : ℕ} (t : ℕ) (h₁ : 0 < t) (x y : BW n) (h₂ : t < d(x,y)), 
+  d(x, change_t_disagreements t x y) = t
+| n t     h₁ nil         nil         h₂ := by {exfalso, simp at h₂, contradiction}
+| n 0     h₁ (xhd::ᴮxtl) (yhd::ᴮytl) h₂ := by {exfalso, simp at h₁, contradiction}
+| n (t+1) h₁ (xhd::ᴮxtl) (yhd::ᴮytl) h₂ := 
+  begin
+    cases xhd; cases yhd;
+      begin
+      rw change_t_disagreements, simp, simp at h₂,
+      apply dist_change_t_disagreements_first_arg (t+1) h₁ xtl ytl h₂,
+      end
+      <|>
+      begin
+      rw change_t_disagreements, simp,
+      rw ← nat.add_one, simp,
+      simp at h₂, have h₃ : t < d(xtl,ytl), from nat.lt_of_succ_lt_succ h₂,
+      cases t,
+        {simp, cases xtl with _ xhd xtl,
+          {rw nil_unique ytl, rw change_t_disagreements},
+        cases ytl with _ yhd ytl, cases xhd; cases yhd; rw change_t_disagreements,
+        },
+      have h₅ : 0 < t.succ, from nat.zero_lt_succ t,
+      apply dist_change_t_disagreements_first_arg (t+1) h₅ xtl ytl h₃,
+      end
+  end
 
-lemma dist_change_t_disagreements_first_arg {n : ℕ} (t : ℕ) (h₁ : 0 < t) (x y : BW n) (h₂ : t < d(x,y)) : 
-  d(x, change_t_disagreements t x y) = t :=
-begin
-  sorry
-end
-
-lemma dist_change_t_disagreements_second_arg {n : ℕ} (t : ℕ) (x y : BW n) :
-  d(y, change_t_disagreements t x y) = d(x,y) - t :=
-begin
-  sorry
-end
+lemma dist_change_t_disagreements_second_arg : 
+  Π {n : ℕ} (t : ℕ) (x y : BW n), d(y, change_t_disagreements t x y) = d(x,y) - t 
+| n t     nil         nil         := by {simp, cases t; rw change_t_disagreements}
+| n 0     (xhd::ᴮxtl) (yhd::ᴮytl) := 
+  begin
+  cases xhd; cases yhd; 
+    {rw change_t_disagreements, simp, apply hamming.distance_symmetric}
+  end
+| n (t+1) (xhd::ᴮxtl) (yhd::ᴮytl) := 
+  begin
+  cases xhd; cases yhd; 
+    {rw change_t_disagreements, simp, apply dist_change_t_disagreements_second_arg}
+  end
 
 theorem t_error_correcting_iff_min_distance_gte (t : ℕ) :
   (∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c'))))
@@ -218,5 +246,6 @@ def hamming74Code : binary_linear_code 7 4 3 :=
 #eval d(hamming74Code)
 #eval d(ᴮ[I,I,O,I,O,O,I],ᴮ[O,I,O,I,O,I,O])
 def c1 := binary_linear_code.change_t_disagreements 2 ᴮ[I,I,O,I,O,O,I] ᴮ[O,I,O,I,O,I,O]
+#eval c1
 #eval d(ᴮ[I,I,O,I,O,O,I],c1)
 #eval d(ᴮ[O,I,O,I,O,I,O],c1)
