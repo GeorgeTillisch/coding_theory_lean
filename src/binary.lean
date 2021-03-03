@@ -7,6 +7,12 @@ inductive B : Type
 
 namespace B
 
+instance : fintype B := 
+{
+  elems := {O, I},
+  complete := by {intro x, simp, cases x, {left, refl}, {right, refl}} 
+}
+
 def repr : B → string
 | O := "0"
 | I := "1"
@@ -75,7 +81,6 @@ inductive BW : ℕ → Type
 | cons {n : ℕ} (b : B) (bw : BW n) : BW (nat.succ n)
 
 namespace BW
-
 open B
 
 notation h `::ᴮ` t := cons h t
@@ -252,6 +257,46 @@ instance : Π {n : ℕ}, vector_space B (BW n) :=
     cases hdx; refl,
   end,
 }
+
+def vector_to_bw : Π {n : ℕ}, vector B n → BW n
+| 0     ⟨[],     _⟩ := nil
+| (n+1) ⟨hd::tl, h⟩ := cons hd (vector_to_bw ⟨tl, by {simp at h, exact h}⟩)
+
+lemma vector_to_bw_injective : Π {n : ℕ}, function.injective (@vector_to_bw n) :=
+begin
+  intros n x y h,
+  induction n with k ih,
+    {simp},
+  cases x with xl hx,
+  cases xl with xhd xtl,
+    {simp at hx, contradiction},
+  cases y with yl hy,
+  cases yl with yhd ytl,
+    {simp at hy, contradiction},
+  repeat {rw vector_to_bw at h}, 
+  simp at h, cases h with h_left h_right, rw h_left,
+  simp, specialize ih h_right, simp at ih, exact ih,
+end
+
+lemma vector_to_bw_surjective : Π {n : ℕ}, function.surjective (@vector_to_bw n) :=
+begin
+  intros n b,
+  induction n with k ih,
+    {use vector.nil, rw nil_unique b, refl},
+  cases b with _ bhd btl,
+  specialize ih btl,
+  cases ih with a_ih ih,
+  cases a_ih with al_ih h_a_ih,
+  have : (bhd::al_ih).length = k.succ, by {rw list.length_cons, rw h_a_ih},
+  use ⟨bhd::al_ih, this⟩,
+  rw vector_to_bw, simp, exact ih,
+end
+
+lemma vector_to_bw_bijective : Π {n : ℕ}, function.bijective (@vector_to_bw n) :=
+λ n, ⟨vector_to_bw_injective, vector_to_bw_surjective⟩
+
+instance : Π {n : ℕ}, fintype (BW n) :=
+λ n, fintype.of_bijective vector_to_bw vector_to_bw_bijective
 
 end BW
 
