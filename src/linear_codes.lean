@@ -192,6 +192,14 @@ begin
     }
 end
 
+
+def sphere {n : ℕ} (c : BW n) (r : ℕ) : finset (BW n) := 
+  finset.filter (λ v, d(c, v) ≤ r) finset.univ
+
+lemma sphere_size {n : ℕ} (c : BW n) (r : ℕ) (h : 0 ≤ r ∧ r ≤ n) : 
+  finset.card (sphere c r) = finset.sum (finset.range (r + 1)) (λ i, nat.choose n i) :=
+sorry
+
 end binary_linear_code
 
 def H74C : finset (BW 7) := {
