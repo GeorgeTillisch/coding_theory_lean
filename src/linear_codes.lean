@@ -192,12 +192,49 @@ begin
     }
 end
 
+open_locale big_operators
 
-def sphere {n : ℕ} (c : BW n) (r : ℕ) : finset (BW n) := 
-  finset.filter (λ v, d(c, v) ≤ r) finset.univ
+def words_at_dist (c : BW n) (r : ℕ) : finset (BW n) :=
+finset.filter (λ v, d(c, v) = r) finset.univ
 
-lemma sphere_size {n : ℕ} (c : BW n) (r : ℕ) (h : 0 ≤ r ∧ r ≤ n) : 
-  finset.card (sphere c r) = finset.sum (finset.range (r + 1)) (λ i, nat.choose n i) :=
+def sphere (c : BW n) (r : ℕ) : finset (BW n) := 
+finset.filter (λ v, d(c, v) ≤ r) finset.univ
+
+lemma words_at_dist_mem (c : BW n) (r : ℕ) :
+  ∀ (bw : BW n), bw ∈ words_at_dist c r ↔ d(c, bw) = r :=
+by {unfold words_at_dist, simp}
+
+lemma sphere_mem (c : BW n) (r : ℕ) : ∀ (bw : BW n), bw ∈ sphere c r ↔ d(c, bw) ≤ r :=
+by {unfold sphere, simp}
+
+lemma words_unique (c : BW n) : (finset.filter (eq c) finset.univ).card = 1 :=
+by {rw finset.filter_eq finset.univ c, simp}
+
+lemma words_at_neq_dists_disjoint (c : BW n) (r₁ r₂ : ℕ) (h : r₁ ≠ r₂) :
+  disjoint (words_at_dist c r₁) (words_at_dist c r₂) :=
+begin
+  rw finset.disjoint_right,
+  by_contradiction h₁, 
+  push_neg at h₁,
+  cases h₁ with a h_a,
+  repeat {rw words_at_dist_mem at h_a},
+  have : r₁ = r₂, from hamming.distance_unique c a r₁ r₂ h_a.symm,
+  contradiction,
+end
+
+lemma words_at_dist_size (c : BW n) (r : ℕ) (h : r ≤ n) : 
+  (words_at_dist c r).card = n.choose r :=
+sorry
+
+lemma sphere_size_eq_sum_words_at_dist_size (c : BW n) (r : ℕ) (h : r ≤ n) :
+  (sphere c r).card = ∑ i in (finset.range (r + 1)), (words_at_dist c i).card :=
+sorry
+
+lemma sphere_size (c : BW n) (r : ℕ) (h : r ≤ n) : 
+  (sphere c r).card = ∑ i in (finset.range (r + 1)), n.choose i :=
+sorry
+
+theorem sphere_packing_boundary : ∑ i in (finset.range ((d - 1) / 2)), n.choose i ≤ 2 ^ (n - m) :=
 sorry
 
 end binary_linear_code
