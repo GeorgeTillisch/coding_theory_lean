@@ -194,6 +194,129 @@ end
 
 open_locale big_operators
 
+def indices (n : ℕ) : finset ℕ := finset.erase (finset.range (n + 1)) 0
+
+@[simp]
+lemma indices_card_eq_word_size (n : ℕ) : (indices n).card = n :=
+by {rw [indices, finset.card_erase_of_mem], simp, simp}
+
+def bw_to_nonzero_indices : Π {n : ℕ}, BW n → finset ℕ
+| 0 nil := finset.empty
+| n (O::ᴮtl) := bw_to_nonzero_indices tl
+| n (I::ᴮtl) := insert n (bw_to_nonzero_indices tl)
+
+lemma mem_nonzero_indices_le_bw_size (x : BW n) (i : ℕ) : 
+  i ∈ (bw_to_nonzero_indices x) → 1 ≤ i → i ≤ n :=
+begin
+  intros h_mem h_gte_one, 
+  induction x with k xhd xtl ih,
+    {rw bw_to_nonzero_indices at h_mem, 
+    have : i ∉ finset.empty, from finset.not_mem_empty i, 
+    contradiction},
+  cases xhd,
+    {rw bw_to_nonzero_indices at h_mem, specialize ih h_mem, rw ← nat.add_one, linarith},
+    {rw bw_to_nonzero_indices at h_mem, 
+    rw finset.mem_insert at h_mem, cases h_mem,
+      {rw h_mem},
+      {specialize ih h_mem, rw ← nat.add_one, linarith},
+    }
+end
+
+lemma weight_eq_card_nonzero_indices (x : BW n) : wt(x) = (bw_to_nonzero_indices x).card :=
+begin
+  induction n with k ih,
+    {rw nil_unique x, rw bw_to_nonzero_indices, rw hamming.weight, refl},
+  cases x with _ xhd xtl,
+  cases xhd,
+    {rw [hamming.weight, bw_to_nonzero_indices], apply ih},
+    {rw [hamming.weight, bw_to_nonzero_indices], 
+    rw finset.card_insert_of_not_mem,
+      {rw nat.add_one, simp, apply ih},
+      {by_contradiction h, 
+      have h₀ : 1 ≤ k.succ, by {rw ← nat.add_one, linarith},
+      have h₁ : k.succ ≤ k, from mem_nonzero_indices_le_bw_size xtl k.succ h h₀,
+      have h₂ : ¬ k.succ ≤ k, from nat.not_succ_le_self k,
+      contradiction,
+      }
+    }
+end
+
+lemma indices_subset_indices_succ (k : ℕ) : indices k ⊆ indices k.succ :=
+begin
+  repeat {rw indices},
+  have h : finset.range (k + 1) ⊆ finset.range (k.succ + 1), by simp,
+  exact finset.erase_subset_erase 0 h,
+end
+
+lemma nonzero_indices_subset_indices (x : BW n) : (bw_to_nonzero_indices x) ⊆ (indices n) :=
+begin
+  induction x with k xhd xtl ih,
+    {rw [bw_to_nonzero_indices, indices], refl},
+  cases xhd,
+    {rw bw_to_nonzero_indices, 
+    have h : indices k ⊆ indices k.succ, from indices_subset_indices_succ k,
+    exact finset.subset.trans ih h},
+    {rw [bw_to_nonzero_indices, finset.insert_subset], split,
+      {rw indices, simp, exact nat.succ_ne_zero k},
+    have h : indices k ⊆ indices k.succ, from indices_subset_indices_succ k,
+    exact finset.subset.trans ih h},
+end
+
+def nonzero_indices_to_bw : Π (n : ℕ), finset ℕ → BW n
+| 0     s := nil
+| (n+1) s :=
+  if n ∈ s then
+    (I::ᴮnonzero_indices_to_bw n s)
+  else
+    (O::ᴮnonzero_indices_to_bw n s)
+
+lemma nonzero_indices_to_bw_inv_bw_to_nonzero_indices (s : finset ℕ) : 
+  bw_to_nonzero_indices (nonzero_indices_to_bw n s) = s :=
+sorry
+
+lemma all_nonzero_indices_eq_powerset_indices :
+  finset.image (λ v : BW n, bw_to_nonzero_indices v) finset.univ = (indices n).powerset :=
+begin
+  simp, ext,
+  split,
+    {simp, intros x h, rw ← h, exact nonzero_indices_subset_indices x},
+    {simp, intro h, use nonzero_indices_to_bw n a, 
+    rw nonzero_indices_to_bw_inv_bw_to_nonzero_indices},
+end
+
+lemma nonzero_indices_eq_powerset_len (w : ℕ) (h : w ≤ n) : 
+  finset.filter (λ s : finset ℕ, s.card = w) 
+    (finset.image (λ v : BW n, bw_to_nonzero_indices v) finset.univ)
+  = finset.powerset_len w (indices n) :=
+begin
+  simp,
+  rw [finset.powerset_len_eq_filter, all_nonzero_indices_eq_powerset_indices],
+end
+
+lemma filter_size_same_as_size_filter (w : ℕ):
+  (finset.filter (λ s : finset ℕ, s.card = w) 
+    (finset.image (λ v : BW n, bw_to_nonzero_indices v) finset.univ)).card
+  = (finset.filter (λ v : BW n, (bw_to_nonzero_indices v).card = w) finset.univ).card :=
+begin
+  sorry
+end
+
+lemma card_nonzero_indices (w : ℕ) (h : w ≤ n) :
+  (finset.filter (λ v : BW n, (bw_to_nonzero_indices v).card = w) finset.univ).card = n.choose w :=
+begin
+  rw [← filter_size_same_as_size_filter, nonzero_indices_eq_powerset_len],
+  simp, exact h,
+end 
+
+lemma num_words_with_weight (w : ℕ) (h : w ≤ n): 
+  (finset.filter (λ v : BW n, wt(v) = w) finset.univ).card = n.choose w :=
+begin
+  conv {to_lhs, congr, congr, funext, rw weight_eq_card_nonzero_indices},
+  simp,
+  exact card_nonzero_indices w h,
+end
+
+
 def words_at_dist (c : BW n) (r : ℕ) : finset (BW n) :=
 finset.filter (λ v, d(c, v) = r) finset.univ
 
@@ -222,9 +345,21 @@ begin
   contradiction,
 end
 
+lemma words_at_dist_eq_words_with_sum_weight (c : BW n) (r : ℕ) :
+  (finset.filter (λ (v : BW n), wt(c + v) = r) finset.univ).card = 
+    (finset.filter (λ (v : BW n), wt(v) = r) finset.univ).card :=
+begin
+  sorry
+end
+
 lemma words_at_dist_size (c : BW n) (r : ℕ) (h : r ≤ n) : 
   (words_at_dist c r).card = n.choose r :=
-sorry
+begin
+  rw words_at_dist,
+  conv {to_lhs, congr, congr, funext, rw hamming.distance_eq_weight_of_sum},
+  simp,
+  rw [words_at_dist_eq_words_with_sum_weight, num_words_with_weight r h],
+end
 
 lemma sphere_size_eq_sum_words_at_dist_size (c : BW n) (r : ℕ) (h : r ≤ n) :
   (sphere c r).card = ∑ i in (finset.range (r + 1)), (words_at_dist c i).card :=
@@ -232,9 +367,6 @@ sorry
 
 lemma sphere_size (c : BW n) (r : ℕ) (h : r ≤ n) : 
   (sphere c r).card = ∑ i in (finset.range (r + 1)), n.choose i :=
-sorry
-
-theorem sphere_packing_boundary : ∑ i in (finset.range ((d - 1) / 2)), n.choose i ≤ 2 ^ (n - m) :=
 sorry
 
 end binary_linear_code
