@@ -161,6 +161,18 @@ induction n with m ih,
   }
 end
 
+lemma distance_unique : ∀ (x y : BW n) (d₁ d₂ : ℕ), d(x,y) = d₁ ∧ d(x,y) = d₂ → d₁ = d₂ :=
+begin
+  intros x y d₁ d₂ h,
+  induction x with m xhd xtl ih,
+    {rw nil_unique y at h, simp at h, rw [← h.left, ← h.right]},
+  cases y with _ yhd ytl,
+  cases xhd; cases yhd;
+    {simp at h, specialize ih ytl h, exact ih}
+    <|>
+    {simp at h, rw [← h.left, ← h.right]}
+end
+
 def weight : Π {n : ℕ}, BW n → ℕ
 | _ nil       := nat.zero
 | _ (O ::ᴮ x) := weight x
