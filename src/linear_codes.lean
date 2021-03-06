@@ -222,6 +222,16 @@ begin
     }
 end
 
+lemma succ_not_mem_nonzero_indices (x : BW n) :
+  n.succ ∉ bw_to_nonzero_indices x :=
+begin
+  by_contradiction h',
+  have h₀ : 1 ≤ n.succ, by {rw ← nat.add_one, linarith},
+  have h₁ : n.succ ≤ n, from mem_nonzero_indices_le_bw_size x n.succ h' h₀,
+  have h₂ : ¬ n.succ ≤ n, from nat.not_succ_le_self n,
+  contradiction
+end
+
 lemma weight_eq_card_nonzero_indices (x : BW n) : wt(x) = (bw_to_nonzero_indices x).card :=
 begin
   induction n with k ih,
@@ -265,14 +275,23 @@ end
 def nonzero_indices_to_bw : Π (n : ℕ), finset ℕ → BW n
 | 0     s := nil
 | (n+1) s :=
-  if n ∈ s then
+  if (n + 1) ∈ s then
     (I::ᴮnonzero_indices_to_bw n s)
   else
     (O::ᴮnonzero_indices_to_bw n s)
 
-lemma nonzero_indices_to_bw_inv_bw_to_nonzero_indices (s : finset ℕ) : 
+lemma nonzero_indices_to_bw_inv_bw_to_nonzero_indices (s : finset ℕ) (h : s ⊆ indices n): 
   bw_to_nonzero_indices (nonzero_indices_to_bw n s) = s :=
-sorry
+begin
+  induction n with k ih,
+    {rw [nonzero_indices_to_bw, bw_to_nonzero_indices], rw indices at h, simp at h, 
+    have h₁ : 0 ∈ {0}, from set.mem_singleton 0,
+    have h₂ : (finset.erase {0} 0).card = 0, by {rw finset.card_erase_of_mem; simp},
+    simp at h₂, rw h₂ at h, rw finset.subset_empty at h, rw h, refl,
+    },
+  rw nonzero_indices_to_bw,
+  sorry
+end
 
 lemma all_nonzero_indices_eq_powerset_indices :
   finset.image (λ v : BW n, bw_to_nonzero_indices v) finset.univ = (indices n).powerset :=
@@ -281,7 +300,7 @@ begin
   split,
     {simp, intros x h, rw ← h, exact nonzero_indices_subset_indices x},
     {simp, intro h, use nonzero_indices_to_bw n a, 
-    rw nonzero_indices_to_bw_inv_bw_to_nonzero_indices},
+    rw nonzero_indices_to_bw_inv_bw_to_nonzero_indices _ h},
 end
 
 lemma nonzero_indices_eq_powerset_len (w : ℕ) (h : w ≤ n) : 
@@ -293,18 +312,69 @@ begin
   rw [finset.powerset_len_eq_filter, all_nonzero_indices_eq_powerset_indices],
 end
 
-lemma filter_size_same_as_size_filter (w : ℕ):
-  (finset.filter (λ s : finset ℕ, s.card = w) 
-    (finset.image (λ v : BW n, bw_to_nonzero_indices v) finset.univ)).card
-  = (finset.filter (λ v : BW n, (bw_to_nonzero_indices v).card = w) finset.univ).card :=
+lemma eq_nonzero_indices_eq_words (a b : BW n) : 
+  bw_to_nonzero_indices a = bw_to_nonzero_indices b → a = b :=
 begin
-  sorry
+  intro h,
+  induction a with k ahd atl ih,
+    {rw nil_unique b},
+  cases b with _ bhd btl,
+  cases ahd,
+    {cases bhd,
+      {simp, exact ih btl h},
+      {simp, repeat {rw bw_to_nonzero_indices at h},
+      have h : k.succ ∉ bw_to_nonzero_indices atl, from succ_not_mem_nonzero_indices atl,
+      have h' : bw_to_nonzero_indices atl ≠ insert k.succ (bw_to_nonzero_indices btl),
+      from finset.ne_insert_of_not_mem _ _ h,
+      contradiction},
+    },
+    {cases bhd,
+      {simp, repeat {rw bw_to_nonzero_indices at h},
+      have h : k.succ ∉ bw_to_nonzero_indices btl, from succ_not_mem_nonzero_indices btl,
+      have h' : insert k.succ (bw_to_nonzero_indices atl) ≠ bw_to_nonzero_indices btl,
+      from (finset.ne_insert_of_not_mem _ _ h).symm,
+      contradiction},
+      {simp, repeat {rw [bw_to_nonzero_indices, finset.insert_eq] at h}, 
+      have h₁ : k.succ ∉ bw_to_nonzero_indices atl, from succ_not_mem_nonzero_indices atl,
+      have h₂ : k.succ ∉ bw_to_nonzero_indices btl, from succ_not_mem_nonzero_indices btl,
+      have h₃ : bw_to_nonzero_indices atl ⊆ bw_to_nonzero_indices btl, 
+        begin
+          rw finset.subset_iff, intros i hi,
+          have h' : i ∈ {k.succ} ∪ bw_to_nonzero_indices atl, from finset.mem_union_right _ hi,
+          rw h at h', simp at h', cases h',
+            {rw ← h' at h₁, contradiction},
+            {exact h'},
+        end,
+      have h₄ : bw_to_nonzero_indices btl ⊆ bw_to_nonzero_indices atl,
+        begin
+          rw finset.subset_iff, intros i hi,
+          have h' : i ∈ {k.succ} ∪ bw_to_nonzero_indices btl, from finset.mem_union_right _ hi,
+          rw ← h at h', simp at h', cases h',
+            {rw ← h' at h₂, contradiction},
+            {exact h'},
+        end,
+      have h₅ : bw_to_nonzero_indices atl = bw_to_nonzero_indices btl, 
+      from finset.subset.antisymm h₃ h₄,
+      exact ih btl h₅,
+      },
+    }
+end
+
+lemma filter_size_same_as_size_filter (w : ℕ):
+  (finset.filter (λ v : BW n, (bw_to_nonzero_indices v).card = w) finset.univ).card =
+  (finset.filter (λ s : finset ℕ, s.card = w) 
+    (finset.image (λ v : BW n, bw_to_nonzero_indices v) finset.univ)).card :=
+begin
+  rw finset.card_congr (λ (v : BW n) h, bw_to_nonzero_indices v),
+    {simp},
+    {simp, intros a b ha hb hab, exact eq_nonzero_indices_eq_words _ _ hab},
+    {simp, intros b hb, use b, split, exact hb, refl},
 end
 
 lemma card_nonzero_indices (w : ℕ) (h : w ≤ n) :
   (finset.filter (λ v : BW n, (bw_to_nonzero_indices v).card = w) finset.univ).card = n.choose w :=
 begin
-  rw [← filter_size_same_as_size_filter, nonzero_indices_eq_powerset_len],
+  rw [filter_size_same_as_size_filter, nonzero_indices_eq_powerset_len],
   simp, exact h,
 end 
 
@@ -349,7 +419,14 @@ lemma words_at_dist_eq_words_with_sum_weight (c : BW n) (r : ℕ) :
   (finset.filter (λ (v : BW n), wt(c + v) = r) finset.univ).card = 
     (finset.filter (λ (v : BW n), wt(v) = r) finset.univ).card :=
 begin
-  sorry
+  rw finset.card_congr (λ (v : BW n) h, c + v),
+    {intros a ha, simp, simp at ha, exact ha},
+    {intros a b ha hb, simp},
+    {intros b hb, simp, simp at hb,
+    use b - c, split,
+      {simp, exact hb},
+      {simp}
+    },
 end
 
 lemma words_at_dist_size (c : BW n) (r : ℕ) (h : r ≤ n) : 
@@ -371,58 +448,58 @@ sorry
 
 end binary_linear_code
 
-def H74C : finset (BW 7) := {
-  val := {
-    ᴮ[O,O,O,O,O,O,O],
-    ᴮ[I,I,O,I,O,O,I],
-    ᴮ[O,I,O,I,O,I,O],
-    ᴮ[I,O,O,O,O,I,I],
-    ᴮ[I,O,O,I,I,O,O],
-    ᴮ[O,I,O,O,I,O,I],
-    ᴮ[I,I,O,O,I,I,O],
-    ᴮ[O,O,O,I,I,I,I],
-    ᴮ[I,I,I,O,O,O,O],
-    ᴮ[O,O,I,I,O,O,I],
-    ᴮ[I,O,I,I,O,I,O],
-    ᴮ[O,I,I,O,O,I,I],
-    ᴮ[O,I,I,I,I,O,O],
-    ᴮ[I,O,I,O,I,O,I],
-    ᴮ[O,O,I,O,I,I,O],
-    ᴮ[I,I,I,I,I,I,I]
-  },
-  nodup := by simp,
-}
+-- def H74C : finset (BW 7) := {
+--   val := {
+--     ᴮ[O,O,O,O,O,O,O],
+--     ᴮ[I,I,O,I,O,O,I],
+--     ᴮ[O,I,O,I,O,I,O],
+--     ᴮ[I,O,O,O,O,I,I],
+--     ᴮ[I,O,O,I,I,O,O],
+--     ᴮ[O,I,O,O,I,O,I],
+--     ᴮ[I,I,O,O,I,I,O],
+--     ᴮ[O,O,O,I,I,I,I],
+--     ᴮ[I,I,I,O,O,O,O],
+--     ᴮ[O,O,I,I,O,O,I],
+--     ᴮ[I,O,I,I,O,I,O],
+--     ᴮ[O,I,I,O,O,I,I],
+--     ᴮ[O,I,I,I,I,O,O],
+--     ᴮ[I,O,I,O,I,O,I],
+--     ᴮ[O,O,I,O,I,I,O],
+--     ᴮ[I,I,I,I,I,I,I]
+--   },
+--   nodup := by simp,
+-- }
 
-def hamming74Code : binary_linear_code 7 4 3 :=
-{
-  cws := H74C,
-  card_gte := by {have : H74C.card = 16, from rfl, linarith},
-  is_subspace := {
-    carrier := H74C,
-    zero_mem' := by {simp, left, refl},
-    add_mem' := begin
-      rintros a b
-        (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | ha)
-        (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | hb),
-        all_goals {
-          try {rw list.eq_of_mem_singleton ha}, 
-          try {rw list.eq_of_mem_singleton hb}, 
-          repeat {{left, refl} <|> right <|> refl},
-        },
-        all_goals {simp, refl},
-    end,
-    smul_mem' := begin
-      intros c x x_mem,
-      cases c,
-        {conv {congr, apply_congr zero_smul}, simp, left, refl},
-        {conv {congr, apply_congr one_smul}, exact x_mem}
-    end,
-  },
-}
+-- def hamming74Code : binary_linear_code 7 4 3 :=
+-- {
+--   cws := H74C,
+--   card_gte := by {have : H74C.card = 16, from rfl, linarith},
+--   is_subspace := {
+--     carrier := H74C,
+--     zero_mem' := by {simp, left, refl},
+--     add_mem' := begin
+--       rintros a b
+--         (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | ha)
+--         (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | hb),
+--         all_goals {
+--           try {rw list.eq_of_mem_singleton ha}, 
+--           try {rw list.eq_of_mem_singleton hb}, 
+--           repeat {{left, refl} <|> right <|> refl},
+--         },
+--         all_goals {simp, refl},
+--     end,
+--     smul_mem' := begin
+--       intros c x x_mem,
+--       cases c,
+--         {conv {congr, apply_congr zero_smul}, simp, left, refl},
+--         {conv {congr, apply_congr one_smul}, exact x_mem}
+--     end,
+--   },
+-- }
 
-#eval d(hamming74Code)
-#eval d(ᴮ[I,I,O,I,O,O,I],ᴮ[O,I,O,I,O,I,O])
-def c1 := binary_linear_code.change_t_disagreements 2 ᴮ[I,I,O,I,O,O,I] ᴮ[O,I,O,I,O,I,O]
-#eval c1
-#eval d(ᴮ[I,I,O,I,O,O,I],c1)
-#eval d(ᴮ[O,I,O,I,O,I,O],c1)
+-- #eval d(hamming74Code)
+-- #eval d(ᴮ[I,I,O,I,O,O,I],ᴮ[O,I,O,I,O,I,O])
+-- def c1 := binary_linear_code.change_t_disagreements 2 ᴮ[I,I,O,I,O,O,I] ᴮ[O,I,O,I,O,I,O]
+-- #eval c1
+-- #eval d(ᴮ[I,I,O,I,O,O,I],c1)
+-- #eval d(ᴮ[O,I,O,I,O,I,O],c1)
