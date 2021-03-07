@@ -276,21 +276,53 @@ def nonzero_indices_to_bw : Π (n : ℕ), finset ℕ → BW n
 | 0     s := nil
 | (n+1) s :=
   if (n + 1) ∈ s then
-    (I::ᴮnonzero_indices_to_bw n s)
+    (I::ᴮnonzero_indices_to_bw n (s.erase (n + 1)))
   else
     (O::ᴮnonzero_indices_to_bw n s)
 
-lemma nonzero_indices_to_bw_inv_bw_to_nonzero_indices (s : finset ℕ) (h : s ⊆ indices n): 
+lemma erase_last_index_subset {s : finset ℕ} : s ⊆ indices (n + 1) → s.erase (n + 1) ⊆ indices n :=
+begin
+  unfold indices,
+  intros h i hi,
+  specialize h (finset.mem_of_mem_erase hi),
+  rw finset.mem_erase at *,
+  split,
+    {exact h.left},
+    {rw finset.mem_range,
+    refine lt_of_le_of_ne _ hi.left,
+    rw ← finset.mem_range_succ_iff,
+    exact h.right}
+end
+
+lemma last_index_not_mem_subset {s : finset ℕ} : s ⊆ indices (n + 1) → n + 1 ∉ s → s ⊆ indices n :=
+begin
+  unfold indices,
+  intros h h' i hi,
+  specialize h hi,
+  rw finset.mem_erase at *,
+  split,
+    {exact h.left},
+    {rw finset.mem_range,
+    apply lt_of_le_of_ne,
+      {rw ← finset.mem_range_succ_iff, exact h.right},
+      {intro h, rw h at hi, exact h' hi}
+    }
+end
+
+
+lemma bw_to_nonzero_indices_inv_nonzero_indices_to_bw (n : ℕ) (s : finset ℕ) (h : s ⊆ indices n) :
   bw_to_nonzero_indices (nonzero_indices_to_bw n s) = s :=
 begin
-  induction n with k ih,
-    {rw [nonzero_indices_to_bw, bw_to_nonzero_indices], rw indices at h, simp at h, 
-    have h₁ : 0 ∈ {0}, from set.mem_singleton 0,
-    have h₂ : (finset.erase {0} 0).card = 0, by {rw finset.card_erase_of_mem; simp},
-    simp at h₂, rw h₂ at h, rw finset.subset_empty at h, rw h, refl,
-    },
-  rw nonzero_indices_to_bw,
-  sorry
+  revert s,
+  induction n with n ih,
+    {intros s h, change ∅ = s, symmetry, rwa ← finset.subset_empty},
+  intros t h,
+  unfold nonzero_indices_to_bw,
+  split_ifs with h',
+    {specialize ih (t.erase (n + 1)) (erase_last_index_subset h),
+    unfold bw_to_nonzero_indices,
+    conv_rhs {rw [← finset.insert_erase h', ← ih]}},
+    {exact ih t (last_index_not_mem_subset h h')},
 end
 
 lemma all_nonzero_indices_eq_powerset_indices :
@@ -300,7 +332,7 @@ begin
   split,
     {simp, intros x h, rw ← h, exact nonzero_indices_subset_indices x},
     {simp, intro h, use nonzero_indices_to_bw n a, 
-    rw nonzero_indices_to_bw_inv_bw_to_nonzero_indices _ h},
+    exact bw_to_nonzero_indices_inv_nonzero_indices_to_bw n a h},
 end
 
 lemma nonzero_indices_eq_powerset_len (w : ℕ) (h : w ≤ n) : 
