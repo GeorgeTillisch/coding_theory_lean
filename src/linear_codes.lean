@@ -435,7 +435,7 @@ by {unfold sphere, simp}
 lemma words_unique (c : BW n) : (finset.filter (eq c) finset.univ).card = 1 :=
 by {rw finset.filter_eq finset.univ c, simp}
 
-lemma words_at_neq_dists_disjoint (c : BW n) (r₁ r₂ : ℕ) (h : r₁ ≠ r₂) :
+lemma words_at_ne_dists_disjoint (c : BW n) (r₁ r₂ : ℕ) (h : r₁ ≠ r₂) :
   disjoint (words_at_dist c r₁) (words_at_dist c r₂) :=
 begin
   rw finset.disjoint_right,
@@ -470,13 +470,49 @@ begin
   rw [words_at_dist_eq_words_with_sum_weight, num_words_with_weight r h],
 end
 
+lemma sphere_eq_union_words_at_dist (c : BW n) (r : ℕ) (h : r ≤ n) :
+  sphere c r = finset.bUnion (finset.range (r + 1)) (words_at_dist c) :=
+begin
+  unfold sphere,
+  ext,
+  split,
+    {simp,
+    intro h, 
+    use d(c,a), 
+    split,
+      {linarith},
+      {rw words_at_dist, simp}},
+    {simp,
+    intros x hx,
+    rw words_at_dist, 
+    simp,
+    intro h_dist,
+    rw h_dist,
+    linarith,
+    }
+end
+
 lemma sphere_size_eq_sum_words_at_dist_size (c : BW n) (r : ℕ) (h : r ≤ n) :
   (sphere c r).card = ∑ i in (finset.range (r + 1)), (words_at_dist c i).card :=
-sorry
+begin
+  rw sphere_eq_union_words_at_dist,
+  rw finset.card_bUnion,
+    {intros x hx y hy h_ne, 
+    exact words_at_ne_dists_disjoint c x y h_ne},
+    {exact h},
+end
 
 lemma sphere_size (c : BW n) (r : ℕ) (h : r ≤ n) : 
   (sphere c r).card = ∑ i in (finset.range (r + 1)), n.choose i :=
-sorry
+begin
+  rw sphere_size_eq_sum_words_at_dist_size c r h,
+  apply finset.sum_congr,
+    {refl},
+  intros h hx,
+  rw words_at_dist_size,
+  simp at hx,
+  linarith,
+end
 
 end binary_linear_code
 
