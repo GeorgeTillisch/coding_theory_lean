@@ -533,28 +533,45 @@ begin
   linarith,
 end
 
+lemma codeword_sphere_union_card (t : ℕ) (ht : t ≤ n)
+  (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
+  (finset.bUnion C.cws (λ c, sphere c t)).card = 
+  C.cws.card * ∑ i in (finset.range (t + 1)), n.choose i :=
+begin 
+  rw finset.card_bUnion,
+    {
+      have h : ∑ (u : BW n) in C.cws, (sphere u t).card = 
+               ∑ (u : BW n) in C.cws, ∑ i in (finset.range (t + 1)), n.choose i,
+      begin
+        rw finset.sum_congr,
+          {refl},
+        intros x hx,
+        exact sphere_size x t ht,
+      end,
+      rw h, simp,
+    },
+    {intros x hx y hy hne,
+    exact (t_error_correcting_spheres_disjoint t t_error_correcting) x y hx hy hne}
+end
+
+lemma codeword_sphere_union_card_le_univ_card (t : ℕ) (ht : t ≤ n)
+  (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
+  (finset.bUnion C.cws (λ c, sphere c t)).card ≤ 2 ^ n :=
+begin 
+  have h : (@finset.univ (BW n) BW.fintype).card = 2 ^ n, by {rw finset.card_univ, simp},
+  rw ← h, apply finset.card_le_of_subset, rw finset.subset_iff, simp,
+end
+
 theorem hamming_bound (t : ℕ) (ht : t ≤ n)
   (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
   C.cws.card ≤ 2 ^ n / ∑ i in (finset.range (t + 1)), n.choose i :=
 begin
-  -- have : (finset.bUnion C.cws (λ c, sphere c t)).card = ∑ (u : BW n) in C.cws, (sphere u t).card,
-  -- begin
-  --   rw finset.card_bUnion,
-  --   intros x hx y hy hne,
-  --   exact (t_error_correcting_spheres_disjoint t t_error_correcting) x y hx hy hne,
-  -- end,
-  -- have : ∑ (u : BW n) in C.cws, (sphere u t).card = 
-  --        ∑ (u : BW n) in C.cws, ∑ i in (finset.range (t + 1)), n.choose i,
-  -- begin
-  --   rw finset.sum_congr,
-  --     {refl},
-  --   intros x hx,
-  --   exact sphere_size x t ht,
-  -- end,
-  -- have : ∑ (u : BW n) in C.cws, ∑ i in (finset.range (t + 1)), n.choose i =
-  --        C.cws.card * ∑ i in (finset.range (t + 1)), n.choose i,
-  -- by simp,
-  sorry
+  have h : C.cws.card * ∑ i in (finset.range (t + 1)), n.choose i ≤ 2 ^ n,
+  by {rw ← codeword_sphere_union_card t ht t_error_correcting, 
+     exact codeword_sphere_union_card_le_univ_card t ht t_error_correcting},
+  have h₁ : ∑ (i : ℕ) in finset.range (t + 1), n.choose i > 0,
+  by sorry,
+  exact (nat.le_div_iff_mul_le C.cws.card (2 ^ n) h₁).mpr h,
 end
 
 end binary_linear_code

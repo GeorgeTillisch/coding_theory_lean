@@ -1,4 +1,5 @@
 import tactic
+import data.fintype.card
 
 @[derive decidable_eq]
 inductive B : Type
@@ -12,6 +13,8 @@ instance : fintype B :=
   elems := {O, I},
   complete := by {intro x, simp, cases x, {left, refl}, {right, refl}} 
 }
+@[simp]
+lemma card_b : fintype.card B = 2 := rfl
 
 def repr : B → string
 | O := "0"
@@ -297,6 +300,51 @@ lemma vector_to_bw_bijective : Π {n : ℕ}, function.bijective (@vector_to_bw n
 
 instance : Π {n : ℕ}, fintype (BW n) :=
 λ n, fintype.of_bijective vector_to_bw vector_to_bw_bijective
+
+def bw_to_vector : Π {n : ℕ}, BW n → vector B n
+| 0     nil       := vector.nil
+| (n+1) (hd::ᴮtl) := vector.cons hd (bw_to_vector tl)
+
+lemma left_inverse_vector_to_bw_bw_to_vector : Π {n : ℕ} (x : BW n), vector_to_bw x.bw_to_vector = x
+| 0     nil       := 
+begin
+  rw bw_to_vector, 
+  rcases vector.nil with ⟨⟨_⟩, p_len⟩, 
+    rw vector_to_bw,
+  have h : (val_hd :: val_tl) = list.nil, from list.length_eq_zero.mp p_len,
+  conv_lhs {congr, congr, rw h}, rw vector_to_bw,
+end
+| (n+1) (hd::ᴮtl) := 
+begin
+  rw bw_to_vector,
+  rcases (hd::ᵥtl.bw_to_vector) with ⟨⟨_⟩, p_len⟩,
+    {exfalso, simp at p_len, have h' : 0 ≠ n.succ, from (nat.succ_ne_zero n).symm, contradiction},
+  rw vector_to_bw,
+  specialize left_inverse_vector_to_bw_bw_to_vector tl,
+  sorry
+end
+
+def vector_bw_equiv : Π {n : ℕ}, equiv (BW n) (vector B n) :=
+λ n, 
+{
+  to_fun := bw_to_vector,
+  inv_fun := vector_to_bw,
+  left_inv := begin 
+    unfold function.left_inverse, 
+    sorry
+  end,
+  right_inv := begin
+    unfold function.right_inverse, unfold function.left_inverse,
+    sorry,
+  end
+}
+
+lemma card_bw_eq_card_vector {n : ℕ} : fintype.card (BW n) = fintype.card (vector B n) :=
+by {apply fintype.card_congr, exact vector_bw_equiv}
+
+@[simp]
+lemma card_bw {n : ℕ} : fintype.card (BW n) = 2 ^ n :=
+by {rw card_bw_eq_card_vector, simp}
 
 end BW
 
