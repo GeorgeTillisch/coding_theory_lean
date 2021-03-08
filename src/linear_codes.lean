@@ -514,6 +514,49 @@ begin
   linarith,
 end
 
+lemma t_error_correcting_spheres_disjoint (t : ℕ) 
+  (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
+  ∀ (c₁ c₂ ∈ C), c₁ ≠ c₂ → disjoint (sphere c₁ t) (sphere c₂ t) :=
+begin
+  rw t_error_correcting_iff_min_distance_gte at t_error_correcting,
+  intros c₁ c₂ hc₁ hc₂ hne,
+  rw finset.disjoint_left,
+  repeat {rw sphere}, simp,
+  intros x hc₁x,
+  by_contradiction hc₂x, push_neg at hc₂x,
+  have h₁ : d(c₁,c₂) ≤ d(c₁,x) + d(x,c₂), from hamming.distance_triangle_ineq c₁ c₂ x,
+  have h₂ : d(c₁,c₂) ≤ 2 * t,
+  from calc d(c₁,c₂) ≤ t + d(x,c₂) : le_add_of_le_add_right h₁ hc₁x
+  ...                ≤ t + t       : by {simp, rw hamming.distance_symmetric, exact hc₂x}
+  ...                = 2 * t       : by ring,
+  have h₃ : d(C) ≤ d(c₁,c₂), from dist_neq_codewords_gt_min_distance c₁ c₂ hc₁ hc₂ hne,
+  linarith,
+end
+
+theorem hamming_bound (t : ℕ) (ht : t ≤ n)
+  (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
+  C.cws.card ≤ 2 ^ n / ∑ i in (finset.range (t + 1)), n.choose i :=
+begin
+  -- have : (finset.bUnion C.cws (λ c, sphere c t)).card = ∑ (u : BW n) in C.cws, (sphere u t).card,
+  -- begin
+  --   rw finset.card_bUnion,
+  --   intros x hx y hy hne,
+  --   exact (t_error_correcting_spheres_disjoint t t_error_correcting) x y hx hy hne,
+  -- end,
+  -- have : ∑ (u : BW n) in C.cws, (sphere u t).card = 
+  --        ∑ (u : BW n) in C.cws, ∑ i in (finset.range (t + 1)), n.choose i,
+  -- begin
+  --   rw finset.sum_congr,
+  --     {refl},
+  --   intros x hx,
+  --   exact sphere_size x t ht,
+  -- end,
+  -- have : ∑ (u : BW n) in C.cws, ∑ i in (finset.range (t + 1)), n.choose i =
+  --        C.cws.card * ∑ i in (finset.range (t + 1)), n.choose i,
+  -- by simp,
+  sorry
+end
+
 end binary_linear_code
 
 -- def H74C : finset (BW 7) := {
