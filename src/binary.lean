@@ -4,7 +4,7 @@ import data.fintype.card
 @[derive decidable_eq]
 inductive B : Type
 | O : B
-| I  : B
+| I : B
 
 namespace B
 
@@ -303,40 +303,29 @@ instance : Π {n : ℕ}, fintype (BW n) :=
 
 def bw_to_vector : Π {n : ℕ}, BW n → vector B n
 | 0     nil       := vector.nil
-| (n+1) (hd::ᴮtl) := vector.cons hd (bw_to_vector tl)
+| (n+1) (hd::ᴮtl) := hd ::ᵥ bw_to_vector tl
 
-lemma left_inverse_vector_to_bw_bw_to_vector : Π {n : ℕ} (x : BW n), vector_to_bw x.bw_to_vector = x
-| 0     nil       := 
-begin
-  rw bw_to_vector, 
-  rcases vector.nil with ⟨⟨_⟩, p_len⟩, 
-    rw vector_to_bw,
-  have h : (val_hd :: val_tl) = list.nil, from list.length_eq_zero.mp p_len,
-  conv_lhs {congr, congr, rw h}, rw vector_to_bw,
-end
-| (n+1) (hd::ᴮtl) := 
-begin
-  rw bw_to_vector,
-  rcases (hd::ᵥtl.bw_to_vector) with ⟨⟨_⟩, p_len⟩,
-    {exfalso, simp at p_len, have h' : 0 ≠ n.succ, from (nat.succ_ne_zero n).symm, contradiction},
-  rw vector_to_bw,
-  specialize left_inverse_vector_to_bw_bw_to_vector tl,
-  sorry
-end
+def bw_to_vector_inv : Π {n : ℕ}, vector B n → BW n
+| 0     _ := nil
+| (n+1) v := (vector.head v) ::ᴮ (bw_to_vector_inv (vector.tail v))
+
+lemma left_inv : 
+  Π {n : ℕ} (x : BW n), bw_to_vector_inv (bw_to_vector x) = x
+| 0     nil       := by rw [bw_to_vector, bw_to_vector_inv]
+| (n+1) (hd::ᴮtl) := by {rw [bw_to_vector, bw_to_vector_inv], simp, exact left_inv tl}
+
+lemma right_inv :
+  Π {n : ℕ} (x : vector B n), bw_to_vector (bw_to_vector_inv x) = x
+| 0     v := by rw [bw_to_vector_inv, bw_to_vector, vector.eq_nil v]
+| (n+1) v := by rw [bw_to_vector_inv, bw_to_vector, right_inv v.tail, vector.cons_head_tail]
 
 def vector_bw_equiv : Π {n : ℕ}, equiv (BW n) (vector B n) :=
 λ n, 
 {
   to_fun := bw_to_vector,
-  inv_fun := vector_to_bw,
-  left_inv := begin 
-    unfold function.left_inverse, 
-    sorry
-  end,
-  right_inv := begin
-    unfold function.right_inverse, unfold function.left_inverse,
-    sorry,
-  end
+  inv_fun := bw_to_vector_inv,
+  left_inv := left_inv,
+  right_inv := right_inv,
 }
 
 lemma card_bw_eq_card_vector {n : ℕ} : fintype.card (BW n) = fintype.card (vector B n) :=
