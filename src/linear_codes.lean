@@ -5,32 +5,33 @@ import algebra.module.submodule
 
 open B BW
 
-structure binary_linear_code (n m d : ℕ) :=
+def min_distance {n : ℕ} (C : finset (BW n)) (h : C.card ≥ 2) : ℕ :=
+finset.min' (finset.image (λ (x : BW n × BW n), d(x.fst, x.snd)) C.off_diag)
+begin
+  have : ∃ (x y : BW n), x ∈ C ∧ y ∈ C ∧ x ≠ y, 
+  from finset.one_lt_card_iff.mp h,
+  simp, rw finset.nonempty, simp,
+  rcases this with ⟨x, y, ⟨hx, hy, hxy⟩⟩,
+  existsi [x, hx, y, hy],
+  exact hxy,
+end
+
+structure binary_code (n M d : ℕ) :=
   (cws : finset (BW n))
+  (has_card_M : cws.card = M)
   (card_gte : cws.card ≥ 2)
-  (is_subspace : subspace B (BW n))
+  (has_min_distance_d : min_distance cws card_gte = d)
 
-namespace binary_linear_code
+namespace binary__code
 
-instance : Π {n m d : ℕ}, has_mem (BW n) (binary_linear_code n m d) :=
-λ n m d, ⟨λ (x : BW n), λ (C : binary_linear_code n m d), x ∈ C.cws⟩
+instance : Π {n m d : ℕ}, has_mem (BW n) (binary_code n m d) :=
+λ n m d, ⟨λ (x : BW n), λ (C : binary_code n m d), x ∈ C.cws⟩
 
 notation `|` C `|` := C.cws.card
 
-def min_distance {n m d : ℕ} (C : binary_linear_code n m d) : ℕ :=
-  finset.min' (finset.image (λ (x : BW n × BW n), d(x.fst, x.snd)) C.cws.off_diag)
-  begin
-    have : ∃ (x y : BW n), x ∈ C ∧ y ∈ C ∧ x ≠ y, 
-    from finset.one_lt_card_iff.mp C.card_gte,
-    simp, rw finset.nonempty, simp,
-    rcases this with ⟨x, y, ⟨hx, hy, hxy⟩⟩,
-    existsi [x, hx, y, hy],
-    exact hxy,
-  end
+notation `d(` C `)` := min_distance C.cws C.card_gte
 
-notation `d(` C `)` := min_distance C
-
-variables {n m d : ℕ} {C : binary_linear_code n m d}
+variables {n m d : ℕ} {C : binary_code n m d}
 
 lemma dist_neq_codewords_gt_min_distance:
   ∀ (c₁ c₂ ∈ C), c₁ ≠ c₂ → d(C) ≤ d(c₁,c₂):=
@@ -580,7 +581,11 @@ begin
   exact (nat.le_div_iff_mul_le (|C|) (2 ^ n) h₁).mpr h,
 end
 
-end binary_linear_code
+end binary__code
+
+
+structure binary_linear_code (n M d : ℕ) extends binary_code n M d :=
+  (is_subspace : subspace B (BW n))
 
 def H74C : finset (BW 7) := {
   val := {
@@ -604,10 +609,12 @@ def H74C : finset (BW 7) := {
   nodup := by simp,
 }
 
-def hamming74Code : binary_linear_code 7 4 3 :=
+def hamming74Code : binary_linear_code 7 16 3 :=
 {
   cws := H74C,
+  has_card_M := rfl,
   card_gte := by {have : H74C.card = 16, from rfl, linarith},
+  has_min_distance_d := rfl,
   is_subspace := {
     carrier := H74C,
     zero_mem' := by {simp, left, refl},
@@ -630,10 +637,3 @@ def hamming74Code : binary_linear_code 7 4 3 :=
     end,
   },
 }
-
-#eval d(hamming74Code)
-#eval d(ᴮ[I,I,O,I,O,O,I],ᴮ[O,I,O,I,O,I,O])
-def c1 := binary_linear_code.change_t_disagreements 2 ᴮ[I,I,O,I,O,O,I] ᴮ[O,I,O,I,O,I,O]
-#eval c1
-#eval d(ᴮ[I,I,O,I,O,O,I],c1)
-#eval d(ᴮ[O,I,O,I,O,I,O],c1)
