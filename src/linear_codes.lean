@@ -15,6 +15,8 @@ namespace binary_linear_code
 instance : Π {n m d : ℕ}, has_mem (BW n) (binary_linear_code n m d) :=
 λ n m d, ⟨λ (x : BW n), λ (C : binary_linear_code n m d), x ∈ C.cws⟩
 
+notation `|` C `|` := C.cws.card
+
 def min_distance {n m d : ℕ} (C : binary_linear_code n m d) : ℕ :=
   finset.min' (finset.image (λ (x : BW n × BW n), d(x.fst, x.snd)) C.cws.off_diag)
   begin
@@ -536,7 +538,7 @@ end
 lemma codeword_sphere_union_card (t : ℕ) (ht : t ≤ n)
   (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
   (finset.bUnion C.cws (λ c, sphere c t)).card = 
-  C.cws.card * ∑ i in (finset.range (t + 1)), n.choose i :=
+  |C| * ∑ i in (finset.range (t + 1)), n.choose i :=
 begin 
   rw finset.card_bUnion,
     {
@@ -564,70 +566,74 @@ end
 
 theorem hamming_bound (t : ℕ) (ht : t ≤ n)
   (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
-  C.cws.card ≤ 2 ^ n / ∑ i in (finset.range (t + 1)), n.choose i :=
+  |C| ≤ 2 ^ n / ∑ i in (finset.range (t + 1)), n.choose i :=
 begin
-  have h : C.cws.card * ∑ i in (finset.range (t + 1)), n.choose i ≤ 2 ^ n,
+  have h : |C| * ∑ i in (finset.range (t + 1)), n.choose i ≤ 2 ^ n,
   by {rw ← codeword_sphere_union_card t ht t_error_correcting, 
      exact codeword_sphere_union_card_le_univ_card t ht t_error_correcting},
   have h₁ : ∑ (i : ℕ) in finset.range (t + 1), n.choose i > 0,
-  by sorry,
-  exact (nat.le_div_iff_mul_le C.cws.card (2 ^ n) h₁).mpr h,
+  begin
+    by_contradiction h', push_neg at h', simp at h',
+    rw finset.sum_range_succ' at h',
+    simp at h', exact h',
+  end,
+  exact (nat.le_div_iff_mul_le (|C|) (2 ^ n) h₁).mpr h,
 end
 
 end binary_linear_code
 
--- def H74C : finset (BW 7) := {
---   val := {
---     ᴮ[O,O,O,O,O,O,O],
---     ᴮ[I,I,O,I,O,O,I],
---     ᴮ[O,I,O,I,O,I,O],
---     ᴮ[I,O,O,O,O,I,I],
---     ᴮ[I,O,O,I,I,O,O],
---     ᴮ[O,I,O,O,I,O,I],
---     ᴮ[I,I,O,O,I,I,O],
---     ᴮ[O,O,O,I,I,I,I],
---     ᴮ[I,I,I,O,O,O,O],
---     ᴮ[O,O,I,I,O,O,I],
---     ᴮ[I,O,I,I,O,I,O],
---     ᴮ[O,I,I,O,O,I,I],
---     ᴮ[O,I,I,I,I,O,O],
---     ᴮ[I,O,I,O,I,O,I],
---     ᴮ[O,O,I,O,I,I,O],
---     ᴮ[I,I,I,I,I,I,I]
---   },
---   nodup := by simp,
--- }
+def H74C : finset (BW 7) := {
+  val := {
+    ᴮ[O,O,O,O,O,O,O],
+    ᴮ[I,I,O,I,O,O,I],
+    ᴮ[O,I,O,I,O,I,O],
+    ᴮ[I,O,O,O,O,I,I],
+    ᴮ[I,O,O,I,I,O,O],
+    ᴮ[O,I,O,O,I,O,I],
+    ᴮ[I,I,O,O,I,I,O],
+    ᴮ[O,O,O,I,I,I,I],
+    ᴮ[I,I,I,O,O,O,O],
+    ᴮ[O,O,I,I,O,O,I],
+    ᴮ[I,O,I,I,O,I,O],
+    ᴮ[O,I,I,O,O,I,I],
+    ᴮ[O,I,I,I,I,O,O],
+    ᴮ[I,O,I,O,I,O,I],
+    ᴮ[O,O,I,O,I,I,O],
+    ᴮ[I,I,I,I,I,I,I]
+  },
+  nodup := by simp,
+}
 
--- def hamming74Code : binary_linear_code 7 4 3 :=
--- {
---   cws := H74C,
---   card_gte := by {have : H74C.card = 16, from rfl, linarith},
---   is_subspace := {
---     carrier := H74C,
---     zero_mem' := by {simp, left, refl},
---     add_mem' := begin
---       rintros a b
---         (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | ha)
---         (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | hb),
---         all_goals {
---           try {rw list.eq_of_mem_singleton ha}, 
---           try {rw list.eq_of_mem_singleton hb}, 
---           repeat {{left, refl} <|> right <|> refl},
---         },
---         all_goals {simp, refl},
---     end,
---     smul_mem' := begin
---       intros c x x_mem,
---       cases c,
---         {conv {congr, apply_congr zero_smul}, simp, left, refl},
---         {conv {congr, apply_congr one_smul}, exact x_mem}
---     end,
---   },
--- }
+def hamming74Code : binary_linear_code 7 4 3 :=
+{
+  cws := H74C,
+  card_gte := by {have : H74C.card = 16, from rfl, linarith},
+  is_subspace := {
+    carrier := H74C,
+    zero_mem' := by {simp, left, refl},
+    add_mem' := begin
+      rintros a b
+        (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | ha)
+        (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | hb),
+        all_goals {
+          try {rw list.eq_of_mem_singleton ha}, 
+          try {rw list.eq_of_mem_singleton hb}, 
+          repeat {{left, refl} <|> right <|> refl},
+        },
+        all_goals {simp, refl},
+    end,
+    smul_mem' := begin
+      intros c x x_mem,
+      cases c,
+        {conv {congr, apply_congr zero_smul}, simp, left, refl},
+        {conv {congr, apply_congr one_smul}, exact x_mem}
+    end,
+  },
+}
 
--- #eval d(hamming74Code)
--- #eval d(ᴮ[I,I,O,I,O,O,I],ᴮ[O,I,O,I,O,I,O])
--- def c1 := binary_linear_code.change_t_disagreements 2 ᴮ[I,I,O,I,O,O,I] ᴮ[O,I,O,I,O,I,O]
--- #eval c1
--- #eval d(ᴮ[I,I,O,I,O,O,I],c1)
--- #eval d(ᴮ[O,I,O,I,O,I,O],c1)
+#eval d(hamming74Code)
+#eval d(ᴮ[I,I,O,I,O,O,I],ᴮ[O,I,O,I,O,I,O])
+def c1 := binary_linear_code.change_t_disagreements 2 ᴮ[I,I,O,I,O,O,I] ᴮ[O,I,O,I,O,I,O]
+#eval c1
+#eval d(ᴮ[I,I,O,I,O,O,I],c1)
+#eval d(ᴮ[O,I,O,I,O,I,O],c1)
