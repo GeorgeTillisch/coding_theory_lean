@@ -22,7 +22,7 @@ structure binary_code (n M d : ℕ) :=
   (card_gte : cws.card ≥ 2)
   (has_min_distance_d : min_distance cws card_gte = d)
 
-namespace binary__code
+namespace binary_code
 
 instance : Π {n m d : ℕ}, has_mem (BW n) (binary_code n m d) :=
 λ n m d, ⟨λ (x : BW n), λ (C : binary_code n m d), x ∈ C.cws⟩
@@ -217,11 +217,11 @@ begin
     have : i ∉ finset.empty, from finset.not_mem_empty i, 
     contradiction},
   cases xhd,
-    {rw bw_to_nonzero_indices at h_mem, specialize ih h_mem, rw ← nat.add_one, linarith},
+    {rw bw_to_nonzero_indices at h_mem, specialize ih h_mem, linarith},
     {rw bw_to_nonzero_indices at h_mem, 
     rw finset.mem_insert at h_mem, cases h_mem,
       {rw h_mem},
-      {specialize ih h_mem, rw ← nat.add_one, linarith},
+      {specialize ih h_mem, linarith},
     }
 end
 
@@ -270,7 +270,7 @@ begin
     have h : indices k ⊆ indices k.succ, from indices_subset_indices_succ k,
     exact finset.subset.trans ih h},
     {rw [bw_to_nonzero_indices, finset.insert_subset], split,
-      {rw indices, simp, exact nat.succ_ne_zero k},
+      {rw indices, simp},
     have h : indices k ⊆ indices k.succ, from indices_subset_indices_succ k,
     exact finset.subset.trans ih h},
 end
@@ -377,7 +377,7 @@ begin
           rw finset.subset_iff, intros i hi,
           have h' : i ∈ {k.succ} ∪ bw_to_nonzero_indices atl, from finset.mem_union_right _ hi,
           rw h at h', simp at h', cases h',
-            {rw ← h' at h₁, contradiction},
+            {rw h' at hi, rw nat.add_one at hi, contradiction},
             {exact h'},
         end,
       have h₄ : bw_to_nonzero_indices btl ⊆ bw_to_nonzero_indices atl,
@@ -385,7 +385,7 @@ begin
           rw finset.subset_iff, intros i hi,
           have h' : i ∈ {k.succ} ∪ bw_to_nonzero_indices btl, from finset.mem_union_right _ hi,
           rw ← h at h', simp at h', cases h',
-            {rw ← h' at h₂, contradiction},
+            {rw h' at hi, rw nat.add_one at hi, contradiction},
             {exact h'},
         end,
       have h₅ : bw_to_nonzero_indices atl = bw_to_nonzero_indices btl, 
@@ -581,7 +581,7 @@ begin
   exact (nat.le_div_iff_mul_le (|C|) (2 ^ n) h₁).mpr h,
 end
 
-end binary__code
+end binary_code
 
 
 structure binary_linear_code (n M d : ℕ) extends binary_code n M d :=
