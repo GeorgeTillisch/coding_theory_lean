@@ -80,7 +80,7 @@ end B
 
 @[derive decidable_eq]
 inductive BW : ℕ → Type
-| nil : BW nat.zero
+| nil : BW 0
 | cons {n : ℕ} (b : B) (bw : BW n) : BW (n + 1)
 
 namespace BW
