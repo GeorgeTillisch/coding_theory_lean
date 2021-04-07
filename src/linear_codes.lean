@@ -31,7 +31,7 @@ notation `|` C `|` := C.cws.card
 
 notation `d(` C `)` := min_distance C.cws C.card_gte
 
-variables {n m d : ℕ} {C : binary_code n m d}
+variables {n M d : ℕ} {C : binary_code n M d}
 
 lemma dist_neq_codewords_gt_min_distance:
   ∀ (c₁ c₂ ∈ C), c₁ ≠ c₂ → d(C) ≤ d(c₁,c₂):=
@@ -54,9 +54,13 @@ begin
   exact ⟨hneq, h_dist⟩,
 end
 
+def error_detecting (C : binary_code n M d) (s : ℕ) : Prop := 
+∀ (x : BW n) (c ∈ C), d(x,c) ≥ 1 ∧ d(x,c) ≤ s → x ∉ C
+
 theorem s_error_detecting_iff_min_distance_gt_s (s : ℕ) : 
-  (∀ (x : BW n) (c ∈ C), d(x,c) ≥ 1 ∧ d(x,c) ≤ s → x ∉ C) ↔ d(C) > s :=
+  C.error_detecting s ↔ d(C) > s :=
 begin
+  unfold error_detecting,
   split,
     {contrapose,
     simp,
@@ -129,10 +133,13 @@ lemma dist_change_t_disagreements_second_arg :
     {rw change_t_disagreements, simp, apply dist_change_t_disagreements_second_arg}
   end
 
+def error_correcting (C : binary_code n M d) (t : ℕ) : Prop := 
+∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))
+
 theorem t_error_correcting_iff_min_distance_gte (t : ℕ) :
-  (∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c'))))
-    ↔ d(C) ≥ 2 * t + 1 :=
+  C.error_correcting t ↔ d(C) ≥ 2 * t + 1 :=
 begin
+  unfold error_correcting,
   split,
     {intro h₁,
     by_contradiction h₂,
@@ -517,8 +524,7 @@ begin
   linarith,
 end
 
-lemma t_error_correcting_spheres_disjoint (t : ℕ) 
-  (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
+lemma t_error_correcting_spheres_disjoint (t : ℕ) (t_error_correcting : C.error_correcting t) :
   ∀ (c₁ c₂ ∈ C), c₁ ≠ c₂ → disjoint (sphere c₁ t) (sphere c₂ t) :=
 begin
   rw t_error_correcting_iff_min_distance_gte at t_error_correcting,
@@ -609,31 +615,31 @@ def H74C : finset (BW 7) := {
   nodup := by simp,
 }
 
-def hamming74Code : binary_linear_code 7 16 3 :=
-{
-  cws := H74C,
-  has_card_M := rfl,
-  card_gte := by {have : H74C.card = 16, from rfl, linarith},
-  has_min_distance_d := rfl,
-  is_subspace := {
-    carrier := H74C,
-    zero_mem' := by {simp, left, refl},
-    add_mem' := begin
-      rintros a b
-        (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | ha)
-        (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | hb),
-        all_goals {
-          try {rw list.eq_of_mem_singleton ha}, 
-          try {rw list.eq_of_mem_singleton hb}, 
-          repeat {{left, refl} <|> right <|> refl},
-        },
-        all_goals {simp, refl},
-    end,
-    smul_mem' := begin
-      intros c x x_mem,
-      cases c,
-        {conv {congr, apply_congr zero_smul}, simp, left, refl},
-        {conv {congr, apply_congr one_smul}, exact x_mem}
-    end,
-  },
-}
+-- def hamming74Code : binary_linear_code 7 16 3 :=
+-- {
+--   cws := H74C,
+--   has_card_M := rfl,
+--   card_gte := by {have : H74C.card = 16, from rfl, linarith},
+--   has_min_distance_d := rfl,
+--   is_subspace := {
+--     carrier := H74C,
+--     zero_mem' := by {simp, left, refl},
+--     add_mem' := begin
+--       rintros a b
+--         (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | ha)
+--         (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | hb),
+--         all_goals {
+--           try {rw list.eq_of_mem_singleton ha}, 
+--           try {rw list.eq_of_mem_singleton hb}, 
+--           repeat {{left, refl} <|> right <|> refl},
+--         },
+--         all_goals {simp, refl},
+--     end,
+--     smul_mem' := begin
+--       intros c x x_mem,
+--       cases c,
+--         {conv {congr, apply_congr zero_smul}, simp, left, refl},
+--         {conv {congr, apply_congr one_smul}, exact x_mem}
+--     end,
+--   },
+-- }
