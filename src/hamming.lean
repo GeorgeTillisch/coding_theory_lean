@@ -13,14 +13,14 @@ def distance : Π {n : ℕ}, BW n → BW n → ℕ
 
 notation `d(` x `,` y `)` := distance x y
 
-variables {n : ℕ}
+variable {n : ℕ}
 
 @[simp]
 lemma distance_self_zero (x : BW n) : d(x,x) = 0 :=
 begin
-  induction x with _ hd _ ih,
+  induction x with k xhd xtl ih,
     refl,
-  cases hd; {rw distance, exact ih}
+  cases xhd; {rw distance, exact ih}
 end
 
 lemma distance_eq_zero_same_head (hd₁ hd₂ : B) (tl₁ tl₂ : BW n) (h : distance (hd₁ ::ᴮ tl₁) (hd₂ ::ᴮ tl₂) = 0) : hd₁ = hd₂ :=
@@ -188,7 +188,7 @@ begin
   cases xhd; {rw [zero, weight], simp, exact ih}
 end
 
-lemma distance_eq_weight_of_sum : ∀ (x y : BW n), d(x,y) = wt((x + y)) :=
+lemma distance_eq_weight_of_sum : ∀ (x y : BW n), d(x,y) = wt(x + y) :=
 begin
   intros x y,
   induction n with m ih,

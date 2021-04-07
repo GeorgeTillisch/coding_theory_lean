@@ -135,9 +135,9 @@ def to_nat : Π {n : ℕ}, BW n → ℕ
 
 
 def flip : Π {n : ℕ} (i : ℕ), i ≤ n → BW n → BW n
-| _ _ _ nil := nil
-| _ 0 _ (hd::ᴮtl) := hd ::ᴮ tl
-| _ 1 _ (hd::ᴮtl) := hd.flip ::ᴮ tl
+| _ _     _ nil       := nil
+| _ 0     _ (hd::ᴮtl) := hd ::ᴮ tl
+| _ 1     _ (hd::ᴮtl) := hd.flip ::ᴮ tl
 | _ (i+1) h (hd::ᴮtl) := hd ::ᴮ (flip i (nat.le_of_succ_le_succ h) tl)
 
 @[simp]
