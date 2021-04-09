@@ -7,7 +7,10 @@ structure BECC (n m d: ℕ) :=
   (decode : BW n → BW m)
   (error_count : BW n → BW n → ℕ)
   (error_correct : BW n → BW n)
-  (error_correcting_code : ∀ (msg : BW m) (received : BW n), error_count (encode msg) received ≤ (d - 1)/2 → decode (error_correct received) = msg)
+  (error_correcting_code : 
+    ∀ (msg : BW m) (received : BW n), 
+      error_count (encode msg) received ≤ (d - 1)/2 → 
+        decode (error_correct received) = msg)
 
 namespace hamming_code
 
@@ -92,7 +95,8 @@ def syndrome_to_coset_leader : BW 3 → BW 7
 | ᴮ[O,I,I] := ᴮ[O,O,O,O,O,I,O]
 | ᴮ[I,I,I] := ᴮ[O,O,O,O,O,O,I]
 
-def error_correct (received : BW 7) : BW 7 := received - syndrome_to_coset_leader (H × received)
+def error_correct (received : BW 7) : BW 7 := 
+received - syndrome_to_coset_leader (H × received)
 
 meta def syndrome_decode : tactic unit :=
 `[
