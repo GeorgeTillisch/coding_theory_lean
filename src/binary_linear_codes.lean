@@ -4,7 +4,7 @@ import hamming
 import binary_codes
 import algebra.module.submodule
 
-open B BW
+open B BW binary_code
 
 structure binary_linear_code (n M d : ℕ) extends binary_code n M d :=
   (is_subspace : subspace B (BW n))
@@ -59,3 +59,26 @@ def hamming74Code : binary_linear_code 7 16 3 :=
     end,
   },
 }
+
+lemma hamming74Code_2_error_detecting : 
+  hamming74Code.to_binary_code.error_detecting 2 := 
+begin
+  rw [s_error_detecting_iff_min_distance_gt_s, hamming74Code.has_min_distance_d],
+  linarith,
+end
+
+lemma hamming74Code_1_error_correcting :
+  hamming74Code.to_binary_code.error_correcting 1 :=
+begin
+  rw [t_error_correcting_iff_min_distance_gte, hamming74Code.has_min_distance_d],
+  linarith,
+end
+
+lemma hamming74Code_perfect :
+  hamming74Code.to_binary_code.perfect :=
+begin
+  unfold perfect,
+  rw [hamming74Code.has_card_M],
+  simp,
+  refl,
+end
