@@ -33,7 +33,7 @@ notation `d(` C `)` := min_distance C.cws C.card_gte
 
 variables {n M d : ℕ} {C : binary_code n M d}
 
-lemma dist_neq_codewords_gt_min_distance:
+lemma dist_neq_codewords_gte_min_distance:
   ∀ (c₁ c₂ ∈ C), c₁ ≠ c₂ → d(C) ≤ d(c₁,c₂):=
 begin
   intros c₁ c₂ hc₁ hc₂ hneq,
@@ -55,10 +55,9 @@ begin
 end
 
 def error_detecting (C : binary_code n M d) (s : ℕ) : Prop := 
-∀ (x : BW n) (c ∈ C), d(x,c) ≥ 1 ∧ d(x,c) ≤ s → x ∉ C
+∀ (x : BW n) (c ∈ C), (d(x,c) ≥ 1 ∧ d(x,c) ≤ s) → x ∉ C
 
-theorem s_error_detecting_iff_min_distance_gt_s (s : ℕ) : 
-  C.error_detecting s ↔ d(C) > s :=
+theorem s_error_detecting_iff_min_distance_gt_s (s : ℕ) : C.error_detecting s ↔ d(C) > s :=
 begin
   unfold error_detecting,
   split,
@@ -78,7 +77,7 @@ begin
       {have h_dxc_eq_zero : d(x,c) = 0, from hamming.eq_distance_zero x c heq,
       linarith},
       {have : d(x,c) ≥ d(C), 
-      from dist_neq_codewords_gt_min_distance x c hx hc heq,
+      from dist_neq_codewords_gte_min_distance x c hx hc heq,
       linarith,}
     },
 end
@@ -97,44 +96,41 @@ lemma dist_change_t_disagreements_first_arg :
   d(x, change_t_disagreements t x y) = t
 | n t     h₁ nil         nil         h₂ := by {exfalso, simp at h₂, contradiction}
 | n 0     h₁ (xhd::ᴮxtl) (yhd::ᴮytl) h₂ := by {exfalso, simp at h₁, contradiction}
-| n (t+1) h₁ (xhd::ᴮxtl) (yhd::ᴮytl) h₂ := 
-  begin
-    cases xhd; cases yhd;
-      begin
-      rw change_t_disagreements, simp, simp at h₂,
-      apply dist_change_t_disagreements_first_arg (t+1) h₁ xtl ytl h₂,
-      end
-      <|>
-      begin
-      rw change_t_disagreements, simp,
-      rw ← nat.add_one, simp,
-      simp at h₂, have h₃ : t < d(xtl,ytl), from nat.lt_of_succ_lt_succ h₂,
-      cases t,
-        {simp, cases xtl with _ xhd xtl,
-          {rw nil_unique ytl, rw change_t_disagreements},
-        cases ytl with _ yhd ytl, cases xhd; cases yhd; rw change_t_disagreements,
-        },
-      have h₅ : 0 < t.succ, from nat.zero_lt_succ t,
-      apply dist_change_t_disagreements_first_arg (t+1) h₅ xtl ytl h₃,
-      end
-  end
+| n (t+1) h₁ (xhd::ᴮxtl) (yhd::ᴮytl) h₂ := begin
+  cases xhd; cases yhd;
+    begin
+    rw change_t_disagreements, simp, simp at h₂,
+    apply dist_change_t_disagreements_first_arg (t+1) h₁ xtl ytl h₂,
+    end
+    <|>
+    begin
+    rw change_t_disagreements, simp,
+    rw ← nat.add_one, simp,
+    simp at h₂, have h₃ : t < d(xtl,ytl), from nat.lt_of_succ_lt_succ h₂,
+    cases t,
+      {simp, cases xtl with _ xhd xtl,
+        {rw nil_unique ytl, rw change_t_disagreements},
+      cases ytl with _ yhd ytl, cases xhd; cases yhd; rw change_t_disagreements,
+      },
+    have h₅ : 0 < t.succ, from nat.zero_lt_succ t,
+    apply dist_change_t_disagreements_first_arg (t+1) h₅ xtl ytl h₃,
+    end
+end
 
 lemma dist_change_t_disagreements_second_arg : 
   Π {n : ℕ} (t : ℕ) (x y : BW n), d(y, change_t_disagreements t x y) = d(x,y) - t 
 | n t     nil         nil         := by {simp, cases t; rw change_t_disagreements}
-| n 0     (xhd::ᴮxtl) (yhd::ᴮytl) := 
-  begin
+| n 0     (xhd::ᴮxtl) (yhd::ᴮytl) := begin
   cases xhd; cases yhd; 
     {rw change_t_disagreements, simp, apply hamming.distance_symmetric}
-  end
-| n (t+1) (xhd::ᴮxtl) (yhd::ᴮytl) := 
-  begin
+end
+| n (t+1) (xhd::ᴮxtl) (yhd::ᴮytl) := begin
   cases xhd; cases yhd; 
     {rw change_t_disagreements, simp, apply dist_change_t_disagreements_second_arg}
-  end
+end
 
 def error_correcting (C : binary_code n M d) (t : ℕ) : Prop := 
-∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))
+∀ (c ∈ C) (x : BW n), d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c'))
 
 theorem t_error_correcting_iff_min_distance_gte (t : ℕ) :
   C.error_correcting t ↔ d(C) ≥ 2 * t + 1 :=
@@ -189,7 +185,7 @@ begin
     {intro h,
     intros c hc x h_dist_le_t c' hc' h_c_neq_c',
     have h₁ : d(c,c') ≥ d(C), 
-    from dist_neq_codewords_gt_min_distance c c' hc hc' h_c_neq_c',
+    from dist_neq_codewords_gte_min_distance c c' hc hc' h_c_neq_c',
     have h₂ : d(c,c') ≥ 2 * t + 1, by linarith,
     have h₃ : d(c,c') ≤ d(c,x) + d(x,c'), from hamming.distance_triangle_ineq c c' x,
     calc d(x,c') ≥ d(c,c') - d(c,x)     : by {simp, exact nat.sub_le_left_of_le_add h₃}
@@ -211,7 +207,7 @@ lemma indices_card_eq_word_size (n : ℕ) : (indices n).card = n :=
 by {rw [indices, finset.card_erase_of_mem], simp, simp}
 
 def bw_to_nonzero_indices : Π {n : ℕ}, BW n → finset ℕ
-| 0 nil := finset.empty
+| 0 nil      := finset.empty
 | n (O::ᴮtl) := bw_to_nonzero_indices tl
 | n (I::ᴮtl) := insert n (bw_to_nonzero_indices tl)
 
@@ -242,7 +238,8 @@ begin
   contradiction
 end
 
-lemma weight_eq_card_nonzero_indices (x : BW n) : wt(x) = (bw_to_nonzero_indices x).card :=
+lemma weight_eq_card_nonzero_indices (x : BW n) :
+  wt(x) = (bw_to_nonzero_indices x).card :=
 begin
   induction n with k ih,
     {rw nil_unique x, rw bw_to_nonzero_indices, rw hamming.weight, refl},
@@ -268,7 +265,8 @@ begin
   exact finset.erase_subset_erase 0 h,
 end
 
-lemma nonzero_indices_subset_indices (x : BW n) : (bw_to_nonzero_indices x) ⊆ (indices n) :=
+lemma nonzero_indices_subset_indices (x : BW n) : 
+ (bw_to_nonzero_indices x) ⊆ (indices n) :=
 begin
   induction x with k xhd xtl ih,
     {rw [bw_to_nonzero_indices, indices], refl},
@@ -304,7 +302,8 @@ begin
     exact h.right}
 end
 
-lemma last_index_not_mem_subset {s : finset ℕ} : s ⊆ indices (n + 1) → n + 1 ∉ s → s ⊆ indices n :=
+lemma last_index_not_mem_subset {s : finset ℕ} : 
+ s ⊆ indices (n + 1) → n + 1 ∉ s → s ⊆ indices n :=
 begin
   unfold indices,
   intros h h' i hi,
@@ -320,7 +319,8 @@ begin
 end
 
 
-lemma bw_to_nonzero_indices_inv_nonzero_indices_to_bw (n : ℕ) (s : finset ℕ) (h : s ⊆ indices n) :
+lemma bw_to_nonzero_indices_inv_nonzero_indices_to_bw 
+  (n : ℕ) (s : finset ℕ) (h : s ⊆ indices n) :
   bw_to_nonzero_indices (nonzero_indices_to_bw n s) = s :=
 begin
   revert s,
@@ -538,12 +538,12 @@ begin
   from calc d(c₁,c₂) ≤ t + d(x,c₂) : le_add_of_le_add_right h₁ hc₁x
   ...                ≤ t + t       : by {simp, rw hamming.distance_symmetric, exact hc₂x}
   ...                = 2 * t       : by ring,
-  have h₃ : d(C) ≤ d(c₁,c₂), from dist_neq_codewords_gt_min_distance c₁ c₂ hc₁ hc₂ hne,
+  have h₃ : d(C) ≤ d(c₁,c₂), from dist_neq_codewords_gte_min_distance c₁ c₂ hc₁ hc₂ hne,
   linarith,
 end
 
 lemma codeword_sphere_union_card (t : ℕ) (ht : t ≤ n)
-  (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
+  (t_error_correcting : C.error_correcting t) :
   (finset.bUnion C.cws (λ c, sphere c t)).card = 
   |C| * ∑ i in (finset.range (t + 1)), n.choose i :=
 begin 
@@ -564,7 +564,7 @@ begin
 end
 
 lemma codeword_sphere_union_card_le_univ_card (t : ℕ) (ht : t ≤ n)
-  (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
+  (t_error_correcting : C.error_correcting t) :
   (finset.bUnion C.cws (λ c, sphere c t)).card ≤ 2 ^ n :=
 begin 
   have h : (@finset.univ (BW n) BW.fintype).card = 2 ^ n, by {rw finset.card_univ, simp},
@@ -572,7 +572,7 @@ begin
 end
 
 theorem hamming_bound (t : ℕ) (ht : t ≤ n)
-  (t_error_correcting : ∀ (c ∈ C) (x : BW n), (d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c')))) :
+  (t_error_correcting : C.error_correcting t) :
   |C| ≤ 2 ^ n / ∑ i in (finset.range (t + 1)), n.choose i :=
 begin
   have h : |C| * ∑ i in (finset.range (t + 1)), n.choose i ≤ 2 ^ n,
