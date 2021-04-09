@@ -587,4 +587,7 @@ begin
   exact (nat.le_div_iff_mul_le (|C|) (2 ^ n) h₁).mpr h,
 end
 
+def perfect (C : binary_code n M d) : Prop := 
+|C| = 2 ^ n / ∑ i in (finset.range ((d - 1)/2 + 1)), n.choose i
+
 end binary_code
