@@ -14,9 +14,12 @@ structure BECC (n m d: ℕ) :=
 
 namespace hamming_code
 
-open B BW
+open B BW 
 
-def G := ᶜ[
+#eval ᴮ[O,O,O,O] ⬝ ᴮ[I,I,I,I] -- 0
+#eval ᴮ[I,O,O,O] ⬝ ᴮ[I,O,O,I] -- 1
+
+def G := ᴹ[
   ᴮ[I,I,O,I],
   ᴮ[I,O,I,I],
   ᴮ[I,O,O,O],
@@ -62,7 +65,7 @@ def encIIIO : encode ᴮ[I,I,I,O] = ᴮ[O,O,I,O,I,I,O] := rfl
 def encIIII : encode ᴮ[I,I,I,I] = ᴮ[I,I,I,I,I,I,I] := rfl
 
 
-def R := ᶜ[
+def R := ᴹ[
   ᴮ[O,O,I,O,O,O,O],
   ᴮ[O,O,O,O,I,O,O],
   ᴮ[O,O,O,O,O,I,O],
@@ -72,20 +75,20 @@ def R := ᶜ[
 def decode (v: BW 7) : BW 4 := R × v
 
 @[simp]
-lemma encode_decode_inverse (msg : BW 4) : decode (encode msg) = msg :=
+lemma decode_inverse_of_encode (msg : BW 4) : decode (encode msg) = msg :=
 begin
   rcases msg with _|⟨_,a,_|⟨_,b,_|⟨_,c,_|⟨_,d,⟨nil⟩⟩⟩⟩⟩,
   cases a; cases b; cases c; cases d; refl,
 end
 
 
-def H := ᶜ[
+def H := ᴹ[
   ᴮ[I,O,I,O,I,O,I],
   ᴮ[O,I,I,O,O,I,I],
   ᴮ[O,O,O,I,I,I,I]
 ]
 
-def syndrome_to_coset_leader : BW 3 → BW 7
+def syndrome_to_error_vector : BW 3 → BW 7
 | ᴮ[O,O,O] := ᴮ[O,O,O,O,O,O,O]
 | ᴮ[I,O,O] := ᴮ[I,O,O,O,O,O,O]
 | ᴮ[O,I,O] := ᴮ[O,I,O,O,O,O,O]
@@ -96,9 +99,9 @@ def syndrome_to_coset_leader : BW 3 → BW 7
 | ᴮ[I,I,I] := ᴮ[O,O,O,O,O,O,I]
 
 def error_correct (received : BW 7) : BW 7 := 
-received - syndrome_to_coset_leader (H × received)
+received - syndrome_to_error_vector (H × received)
 
-meta def syndrome_decode : tactic unit :=
+meta def find_error : tactic unit :=
 `[
   simp at *,
   cases received with _ hd tl, cases hd;
@@ -127,12 +130,12 @@ meta def syndrome_decode : tactic unit :=
     }
 ]
 
-lemma single_error_correctable (msg : BW 4) (received : BW 7) 
-  : d(encode msg, received) = 1 → error_correct received = encode msg := 
+lemma single_error_correctable (msg : BW 4) (received : BW 7) : 
+  d(encode msg, received) = 1 → error_correct received = encode msg := 
 begin
   intro h,
   rcases msg with _|⟨_,a,_|⟨_,b,_|⟨_,c,_|⟨_,d,⟨nil⟩⟩⟩⟩⟩,
-  cases a; cases b; cases c; cases d; syndrome_decode,
+  cases a; cases b; cases c; cases d; find_error,
 end
 
 lemma no_encoding_errors (msg : BW 4) : error_correct (encode msg) = encode msg :=
@@ -142,8 +145,8 @@ begin
   cases a; cases b; cases c; cases d; refl,
 end
 
-theorem one_error_correcting_code (msg : BW 4) (received : BW 7) 
-  : d(encode msg, received) ≤ 1 → decode (error_correct received) = msg :=
+theorem one_error_correcting_code (msg : BW 4) (received : BW 7) : 
+  d(encode msg, received) ≤ 1 → decode (error_correct received) = msg :=
 begin
   intro h,
   have h₁ : d(encode msg, received) = 0 ∨ d(encode msg, received) = 1,
@@ -159,11 +162,11 @@ begin
     from hamming.distance_zero_eq (encode msg) received h₁,
     rw h₂.symm, 
     rw no_encoding_errors,
-    rw encode_decode_inverse},
+    rw decode_inverse_of_encode},
     {have h₂ : error_correct received = encode msg, 
     from single_error_correctable msg received h₁, 
     rw h₂, 
-    rw encode_decode_inverse}
+    rw decode_inverse_of_encode}
 end
 
 def hamming74code : BECC 7 4 3 :=
