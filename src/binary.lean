@@ -118,7 +118,7 @@ def intersection : Π {n : ℕ}, BW n → BW n → BW n
 notation bw₁ `∩` bw₂ := intersection bw₁ bw₂
 
 def dot_product :  Π {n : ℕ}, BW n → BW n → B
-| _ nil nil := O
+| _ nil         nil        := O
 | _ (hd₁::ᴮtl₁) (hd₂::ᴮtl₂) := (hd₁ * hd₂) + (dot_product tl₁ tl₂)
 
 notation bw₁ `⬝` bw₂ := dot_product bw₁ bw₂
@@ -340,16 +340,16 @@ end BW
 
 inductive BWM (n : ℕ) : ℕ → Type
 | nil : BWM nat.zero
-| cons {m : ℕ} (bw : BW n) (bc : BWM m) : BWM m.succ
+| cons {m : ℕ} (bw : BW n) (bwm : BWM m) : BWM m.succ
 
 namespace BWM
 
-notation h`::ᶜ` t := cons h t
-notation `ᶜ[` bc:(foldr `,` (h t, cons h t) nil) `]` := bc
+notation h`::ᴹ` t := cons h t
+notation `ᴹ[` bwm:(foldr `,` (h t, cons h t) nil) `]` := bwm
 
 def repr : Π {n m : ℕ}, BWM n m → string
 | _ _ nil       := ""
-| _ _ (hd::ᶜtl) := hd.repr ++ "\n" ++ (repr tl)
+| _ _ (hd ::ᴹ tl) := hd.repr ++ "\n" ++ (repr tl)
 instance {n m : ℕ} : has_repr (BWM n m) := ⟨BWM.repr⟩
 
 def length : Π {n m : ℕ}, BWM n m → ℕ
@@ -359,9 +359,9 @@ def size : Π {n m : ℕ}, BWM n m → ℕ
 | _ m _ := m
 
 def r_mul : Π {n m : ℕ}, BWM n m → BW n → BW m
-| _ 0 BWM.nil _ := BW.nil
-| n m (hd::ᶜtl) bw := (hd ⬝ bw)::ᴮ(r_mul tl bw)
+| _ 0 nil         _  := BW.nil
+| n m (hd ::ᴹ tl) bw := (hd ⬝ bw) ::ᴮ (r_mul tl bw)
 
-notation bc `×` bw := r_mul bc bw
+notation bwm `×` bw := r_mul bwm bw
 
 end BWM
