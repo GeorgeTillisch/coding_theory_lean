@@ -132,71 +132,78 @@ end
 def error_correcting (C : binary_code n M d) (t : ℕ) : Prop := 
 ∀ (c ∈ C) (x : BW n), d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c'))
 
+lemma t_error_correcting_min_distance_gte (t : ℕ) :
+  C.error_correcting t → d(C) ≥ 2 * t + 1 :=
+begin
+  intro h₁,
+  by_contradiction h₂,
+  simp at h₂,
+  have h₃ : ∃ (c₁ c₂ ∈ C), c₁ ≠ c₂ ∧ d(c₁,c₂) = d(C),
+  from min_distance_pair,
+  rcases h₃ with ⟨c, c', hc, hc', ⟨hneq, h_dist_eq_min⟩⟩,
+  have h₄ : d(c,c') ≤ 2 * t, by linarith,
+  have h₅ : d(c, c') ≥ t + 1, 
+  by {
+    specialize h₁ c hc c',
+    by_contradiction h',
+    simp at h',
+    have h'' : d(c,c') ≤ t, from nat.le_of_lt_succ h',
+    rw hamming.distance_symmetric at h'',
+    specialize h₁ h'' c' hc' hneq,
+    have : d(c',c') = 0, from hamming.eq_distance_zero c' c' rfl,
+    rw this at h₁,
+    simp at h₁,
+    exact h₁,
+  },
+  have h₆ : ∃ (x : BW n), 1 ≤ d(x,c') ∧ d(x,c') ≤ d(x,c) ∧ d(x,c) = t,
+  by {
+    use change_t_disagreements t c c',
+    have h_d₀ : 1 ≤ d(c,c') ∧ d(c,c') ≤ n, from hamming.distance_neq_between_one_n c c' hneq,
+    have h_d₁ : d(c, change_t_disagreements t c c') = t,
+    by {apply dist_change_t_disagreements_first_arg; linarith},
+    have h_d₂ : d(c', change_t_disagreements t c c') = d(c,c') - t,
+    by {apply dist_change_t_disagreements_second_arg},
+    rw [hamming.distance_symmetric _ c, hamming.distance_symmetric _ c'],
+    split,
+      {calc d(c',change_t_disagreements t c c') ≥ d(c,c') - t : by linarith
+      ...                                       ≥ t + 1 - t   : by exact nat.sub_le_sub_right h₅ t
+      ...                                       = 1           : by simp,},
+      split,
+      {rw [h_d₁, h_d₂], 
+      apply nat.sub_le_left_iff_le_add.mpr,
+      conv {congr, skip, ring},
+      exact h₄,},
+      {linarith}
+  },
+  rcases h₆ with ⟨x, ⟨h_dxgt1, h_dxc'_le_dxc, h_dxc_eq_t⟩⟩,
+  have h_dxc_le_t : d(x,c) ≤ t, by linarith,
+  specialize h₁ c hc x h_dxc_le_t c' hc' hneq,
+  linarith,
+end
+
+lemma min_distance_gte_t_error_correcting (t : ℕ) :
+  d(C) ≥ 2 * t + 1 → C.error_correcting t :=
+begin
+  intro h,
+  intros c hc x h_dist_le_t c' hc' h_c_neq_c',
+  have h₁ : d(c,c') ≥ d(C), 
+  from dist_neq_codewords_gte_min_distance c c' hc hc' h_c_neq_c',
+  have h₂ : d(c,c') ≥ 2 * t + 1, by linarith,
+  have h₃ : d(c,c') ≤ d(c,x) + d(x,c'), from hamming.distance_triangle_ineq c c' x,
+  calc d(x,c') ≥ d(c,c') - d(c,x)     : by {simp, exact nat.sub_le_left_of_le_add h₃}
+  ...          ≥ (2 * t + 1) - d(c,x) : by {simp, exact nat.sub_le_sub_right h₂ d(c,x)}
+  ...          ≥ (2 * t + 1) - t      : by {simp, rw hamming.distance_symmetric, 
+                                            exact (2 * t + 1).sub_le_sub_left h_dist_le_t}
+  ...          = (t + t + 1) - t      : by ring
+  ...          = t + 1                : by {rw nat.add_assoc, simp}
+  ...          > d(x,c)               : by linarith,
+end
+
 theorem t_error_correcting_iff_min_distance_gte (t : ℕ) :
   C.error_correcting t ↔ d(C) ≥ 2 * t + 1 :=
-begin
-  unfold error_correcting,
-  split,
-    {intro h₁,
-    by_contradiction h₂,
-    simp at h₂,
-    have h₃ : ∃ (c₁ c₂ ∈ C), c₁ ≠ c₂ ∧ d(c₁,c₂) = d(C),
-    from min_distance_pair,
-    rcases h₃ with ⟨c, c', hc, hc', ⟨hneq, h_dist_eq_min⟩⟩,
-    have h₄ : d(c,c') ≤ 2 * t, by linarith,
-    have h₅ : d(c, c') ≥ t + 1, 
-    by {
-      specialize h₁ c hc c',
-      by_contradiction h',
-      simp at h',
-      have h'' : d(c,c') ≤ t, from nat.le_of_lt_succ h',
-      rw hamming.distance_symmetric at h'',
-      specialize h₁ h'' c' hc' hneq,
-      have : d(c',c') = 0, from hamming.eq_distance_zero c' c' rfl,
-      rw this at h₁,
-      simp at h₁,
-      exact h₁,
-    },
-    have h₆ : ∃ (x : BW n), 1 ≤ d(x,c') ∧ d(x,c') ≤ d(x,c) ∧ d(x,c) = t,
-    by {
-      use change_t_disagreements t c c',
-      have h_d₀ : 1 ≤ d(c,c') ∧ d(c,c') ≤ n, from hamming.distance_neq_between_one_n c c' hneq,
-      have h_d₁ : d(c, change_t_disagreements t c c') = t,
-      by {apply dist_change_t_disagreements_first_arg; linarith},
-      have h_d₂ : d(c', change_t_disagreements t c c') = d(c,c') - t,
-      by {apply dist_change_t_disagreements_second_arg},
-      rw [hamming.distance_symmetric _ c, hamming.distance_symmetric _ c'],
-      split,
-        {calc d(c',change_t_disagreements t c c') ≥ d(c,c') - t : by linarith
-        ...                                       ≥ t + 1 - t   : by exact nat.sub_le_sub_right h₅ t
-        ...                                       = 1           : by simp,},
-        split,
-        {rw [h_d₁, h_d₂], 
-        apply nat.sub_le_left_iff_le_add.mpr,
-        conv {congr, skip, ring},
-        exact h₄,},
-        {linarith}
-    },
-    rcases h₆ with ⟨x, ⟨h_dxgt1, h_dxc'_le_dxc, h_dxc_eq_t⟩⟩,
-    have h_dxc_le_t : d(x,c) ≤ t, by linarith,
-    specialize h₁ c hc x h_dxc_le_t c' hc' hneq,
-    linarith,
-    },
-    {intro h,
-    intros c hc x h_dist_le_t c' hc' h_c_neq_c',
-    have h₁ : d(c,c') ≥ d(C), 
-    from dist_neq_codewords_gte_min_distance c c' hc hc' h_c_neq_c',
-    have h₂ : d(c,c') ≥ 2 * t + 1, by linarith,
-    have h₃ : d(c,c') ≤ d(c,x) + d(x,c'), from hamming.distance_triangle_ineq c c' x,
-    calc d(x,c') ≥ d(c,c') - d(c,x)     : by {simp, exact nat.sub_le_left_of_le_add h₃}
-    ...          ≥ (2 * t + 1) - d(c,x) : by {simp, exact nat.sub_le_sub_right h₂ d(c,x)}
-    ...          ≥ (2 * t + 1) - t      : by {simp, rw hamming.distance_symmetric, 
-                                              exact (2 * t + 1).sub_le_sub_left h_dist_le_t}
-    ...          = (t + t + 1) - t      : by ring
-    ...          = t + 1                : by {rw nat.add_assoc, simp}
-    ...          > d(x,c)               : by linarith,
-    }
-end
+iff.intro
+  (t_error_correcting_min_distance_gte t)
+  (min_distance_gte_t_error_correcting t)
 
 open_locale big_operators
 
