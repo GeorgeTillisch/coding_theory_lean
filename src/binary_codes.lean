@@ -1,7 +1,6 @@
 import tactic
 import binary
 import hamming
-import algebra.module.submodule
 
 open B BW
 
@@ -181,7 +180,7 @@ begin
   linarith,
 end
 
-lemma min_distance_gte_t_error_correcting (t : ℕ) :
+lemma min_distance_gte_t_error_correcting' (t : ℕ) :
   d(C) ≥ 2 * t + 1 → C.error_correcting t :=
 begin
   intro h,
@@ -197,6 +196,22 @@ begin
   ...          = (t + t + 1) - t      : by ring
   ...          = t + 1                : by {rw nat.add_assoc, simp}
   ...          > d(x,c)               : by linarith,
+end
+
+-- Proof of the contropositive, 
+-- which is a simpler informal proof and slightly simpler formal proof.
+lemma min_distance_gte_t_error_correcting (t : ℕ) :
+  d(C) ≥ 2 * t + 1 → C.error_correcting t :=
+begin
+  contrapose, unfold error_correcting, simp, 
+  intros c hc x hx c' hc' hneq hdist,
+  have h_x_c'_dist : d(x,c') ≤ t, by linarith,
+  calc d(C) ≤ d(c,c')          : dist_neq_codewords_gte_min_distance _ _ hc hc' hneq
+  ...       ≤ d(c,x) + d(x,c') : hamming.distance_triangle_ineq c c' x
+  ...       ≤ t + d(x,c')      : by {simp, rw hamming.distance_symmetric, exact hx,}
+  ...       ≤ t + t            : by {simp, exact h_x_c'_dist,}
+  ...       = 2 * t            : by ring
+  ...       < 2 * t + 1        : by simp,
 end
 
 theorem t_error_correcting_iff_min_distance_gte (t : ℕ) :
