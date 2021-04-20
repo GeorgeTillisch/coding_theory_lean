@@ -45,6 +45,7 @@ meta def hamcode_view : (((BW 4) × ℕ) × π) → list (html hamcode_action)
 | ⟨⟨x, errpos⟩, _⟩ :=
   h "section" [className "mw5 mw7-ns center bg-transparent pa3 ph5-ns"] [
     h "h2" [className "mt0"] ["The Hamming(7,4) Code"],
+    h "p" [className "lh-copy measure"] ["Click on bits of the message to flip them. Click on error positions to flip a bit in the received word."],
     h "h3" [] ["Message:"],
     h "div" [className "dtc code"] [
       h "button" [className "f3 br2 ph3 pv2 mb2 dib blue bg-white", on_click (λ ⟨⟩, flip_first)] 
@@ -137,4 +138,5 @@ component.with_state
   hamcode_update
 $ component.pure hamcode_view
 
+-- Click on the #html part to see the widget
 #html HamcodeDemo
