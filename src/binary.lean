@@ -1,6 +1,21 @@
 import tactic
 import data.fintype.card
 
+/-!
+# Bits, Binary Words, and Binary Word Matrices
+
+This file contains definitions of bits `B`, binary words `BW`, 
+and binary word matrices `BWM`.
+
+## Notation
+
+- `O` and `I` for bits 0 and 1.
+- `::ᴮ` for the cons constructor for binary words.
+- `ᴮ[]` for writing binary words as lists of bits.
+- `::ᴹ` for the cons contructor for binary word matrices. 
+- `ᴹ[]` for writing binary word matrices as lists of binary words.
+-/
+
 @[derive decidable_eq]
 inductive B : Type
 | O : B
@@ -133,7 +148,7 @@ def to_nat : Π {n : ℕ}, BW n → ℕ
 | _     nil       := 0
 | (m+1) (hd::ᴮtl) := (hd.to_nat * 2 ^ m) + tl.to_nat
 
-
+-- This function is no longer used, but kept here for reference.
 def flip : Π {n : ℕ} (i : ℕ), i ≤ n → BW n → BW n
 | _ _     _ nil       := nil
 | _ 0     _ (hd::ᴮtl) := hd ::ᴮ tl
@@ -141,8 +156,8 @@ def flip : Π {n : ℕ} (i : ℕ), i ≤ n → BW n → BW n
 | _ (i+1) h (hd::ᴮtl) := hd ::ᴮ (flip i (nat.le_of_succ_le_succ h) tl)
 
 @[simp]
-lemma add_hds {n : ℕ} (hd₁ hd₂ : B) (tl₁ tl₂ : BW n) 
-  : add (hd₁::ᴮtl₁) (hd₂::ᴮtl₂) = ((hd₁ + hd₂)::ᴮ(add tl₁ tl₂)) :=
+lemma add_hds {n : ℕ} (hd₁ hd₂ : B) (tl₁ tl₂ : BW n) : 
+  add (hd₁::ᴮtl₁) (hd₂::ᴮtl₂) = ((hd₁ + hd₂)::ᴮ(add tl₁ tl₂)) :=
 rfl
 
 instance : Π {n : ℕ}, add_comm_group (BW n) := 
@@ -260,6 +275,11 @@ instance : Π {n : ℕ}, vector_space B (BW n) :=
     cases hdx; refl,
   end,
 }
+
+/-! 
+The remainder of this section establishes various equivalences between `BW n` and `vector B n`.
+We use these equivalences to establish `fintype (BW n)` and `fintype.card (BW n) = 2 ^ n`.
+-/
 
 def vector_to_bw : Π {n : ℕ}, vector B n → BW n
 | 0     ⟨[],     _⟩ := nil

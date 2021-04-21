@@ -1,6 +1,25 @@
 import tactic
 import binary
 
+/-!
+# Hamming distance and weight
+
+This file contains definitions of tha Hamming distance and Hamming weight.
+
+## Main Results
+
+- `distance_zero_iff_eq`      : distance is zero iff words are equal.
+- `distance_symmetric`        : distance is a symmetric relation.
+- `distance_between_zero_n`   : distance between zero and length of words.
+- `distance_triangle_ineq`    : the triangle inequality for the hamming distance.
+- `distance_eq_weight_of_sum` : relationship between distance and weight.
+
+## Notation
+
+- `d(x,y)` for distance x y.
+- `wt(x)` for weight x.
+-/
+
 namespace hamming
 
 open B BW
@@ -23,11 +42,16 @@ begin
   cases xhd; {rw distance, exact ih}
 end
 
-lemma distance_eq_zero_same_head (hd₁ hd₂ : B) (tl₁ tl₂ : BW n) (h : distance (hd₁ ::ᴮ tl₁) (hd₂ ::ᴮ tl₂) = 0) : hd₁ = hd₂ :=
+lemma distance_eq_zero_same_head 
+  (hd₁ hd₂ : B) (tl₁ tl₂ : BW n) (h : distance (hd₁ ::ᴮ tl₁) (hd₂ ::ᴮ tl₂) = 0) : 
+  hd₁ = hd₂ :=
 by cases hd₁; cases hd₂; {refl <|> contradiction}
 
 @[simp]
-lemma distance_hd_eq_same_distance_tail (hd₁ hd₂ : B) (tl₁ tl₂ : BW n) (h : hd₁ = hd₂) : distance (hd₁ ::ᴮ tl₁) (hd₂ ::ᴮ tl₂) = distance tl₁ tl₂ :=
+lemma distance_hd_eq_same_distance_tail 
+  (hd₁ hd₂ : B) (tl₁ tl₂ : BW n) 
+  (h : hd₁ = hd₂) : 
+  distance (hd₁ ::ᴮ tl₁) (hd₂ ::ᴮ tl₂) = distance tl₁ tl₂ :=
 by cases hd₁; cases hd₂; {refl <|> contradiction}
 
 lemma distance_zero_eq (x y : BW n) : d(x,y) = 0 → (x = y) :=
@@ -66,7 +90,9 @@ begin
 end
 
 @[simp]
-lemma distance_hd_neq_same_succ_distance_tail (hd₁ hd₂ : B) (tl₁ tl₂ : BW n) (h : hd₁ ≠ hd₂) : distance (hd₁ ::ᴮ tl₁) (hd₂ ::ᴮ tl₂) = nat.succ d(tl₁,tl₂) :=
+lemma distance_hd_neq_same_succ_distance_tail 
+  (hd₁ hd₂ : B) (tl₁ tl₂ : BW n) (h : hd₁ ≠ hd₂) : 
+  distance (hd₁ ::ᴮ tl₁) (hd₂ ::ᴮ tl₂) = nat.succ d(tl₁,tl₂) :=
 by cases hd₁; cases hd₂; {refl <|> contradiction}
 
 theorem distance_symmetric : ∀ (x y : BW n), d(x,y) = d(y,x) :=
@@ -102,7 +128,8 @@ begin
     }
 end
 
-lemma distance_neq_between_one_n : ∀ (x y : BW n), x ≠ y → 1 ≤ d(x,y) ∧ d(x,y) ≤ n :=
+lemma distance_neq_between_one_n : 
+  ∀ (x y : BW n), x ≠ y → 1 ≤ d(x,y) ∧ d(x,y) ≤ n :=
 begin
   intros x y hneq,
   have h₁ : 0 ≤ d(x,y) ∧ d(x,y) ≤ n, from distance_between_zero_n x y,
@@ -112,7 +139,8 @@ begin
     {exact h₁.right}
 end
 
-theorem distance_triangle_ineq : ∀ (x y z : BW n), d(x,y) ≤ d(x,z) + d(z,y) :=
+theorem distance_triangle_ineq : 
+  ∀ (x y z : BW n), d(x,y) ≤ d(x,z) + d(z,y) :=
 begin
 intros,
 induction n with m ih,
@@ -161,7 +189,8 @@ induction n with m ih,
   }
 end
 
-lemma distance_unique : ∀ (x y : BW n) (d₁ d₂ : ℕ), d(x,y) = d₁ ∧ d(x,y) = d₂ → d₁ = d₂ :=
+lemma distance_unique : 
+  ∀ (x y : BW n) (d₁ d₂ : ℕ), d(x,y) = d₁ ∧ d(x,y) = d₂ → d₁ = d₂ :=
 begin
   intros x y d₁ d₂ h,
   induction x with m xhd xtl ih,
