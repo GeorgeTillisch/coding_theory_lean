@@ -2,6 +2,17 @@ import tactic
 import binary
 import hamming
 
+/-!
+# Syndrome Decoding for the Hamming(7,4) code.
+
+This file contains a formalization of the Hamming(7,4) code.
+In particular, we formalize encoding, decoding, and error correction procedures.
+We use a structure `BECC` (Binary Error Correcting Code) to guide this formalization.
+
+The reader may be intersete in using `#eval` commands to try out this code.
+Or see the releated `hamcode_widget.lean` file.
+-/
+
 structure BECC (n m d: ℕ) :=
   (encode : BW m → BW n)
   (decode : BW n → BW m)
@@ -16,9 +27,7 @@ namespace hamming_code
 
 open B BW 
 
-#eval ᴮ[O,O,O,O] ⬝ ᴮ[I,I,I,I] -- 0
-#eval ᴮ[I,O,O,O] ⬝ ᴮ[I,O,O,I] -- 1
-
+/-- The generator matrix. -/
 def G := ᴹ[
   ᴮ[I,I,O,I],
   ᴮ[I,O,I,I],
@@ -29,6 +38,7 @@ def G := ᴹ[
   ᴮ[O,O,O,I]
 ]
 
+/-- The encoding procedure. -/
 def encode (u: BW 4) : BW 7 := G × u
 
 @[simp]
@@ -64,7 +74,7 @@ def encIIIO : encode ᴮ[I,I,I,O] = ᴮ[O,O,I,O,I,I,O] := rfl
 @[simp]
 def encIIII : encode ᴮ[I,I,I,I] = ᴮ[I,I,I,I,I,I,I] := rfl
 
-
+/-- The decoding matrix. -/
 def R := ᴹ[
   ᴮ[O,O,I,O,O,O,O],
   ᴮ[O,O,O,O,I,O,O],
@@ -72,6 +82,7 @@ def R := ᴹ[
   ᴮ[O,O,O,O,O,O,I]
 ]
 
+/-- The decoding procedure. Assumes that errors have been corrected. -/
 def decode (v: BW 7) : BW 4 := R × v
 
 @[simp]
@@ -81,13 +92,19 @@ begin
   cases a; cases b; cases c; cases d; refl,
 end
 
-
+/-- The parity-check matrix. -/
 def H := ᴹ[
   ᴮ[I,O,I,O,I,O,I],
   ᴮ[O,I,I,O,O,I,I],
   ᴮ[O,O,O,I,I,I,I]
 ]
 
+/-- 
+Given a syndrome resulting from matrix multiplication with the parity-check matrix,
+returns the error vector corresponding to that syndrome.
+Note: due to rhs multiplication, 
+the reverse of a syndrome is the binary representation of the error location.
+-/
 def syndrome_to_error_vector : BW 3 → BW 7
 | ᴮ[O,O,O] := ᴮ[O,O,O,O,O,O,O]
 | ᴮ[I,O,O] := ᴮ[I,O,O,O,O,O,O]
@@ -98,9 +115,11 @@ def syndrome_to_error_vector : BW 3 → BW 7
 | ᴮ[O,I,I] := ᴮ[O,O,O,O,O,I,O]
 | ᴮ[I,I,I] := ᴮ[O,O,O,O,O,O,I]
 
+/-- The error correction procedure -/
 def error_correct (received : BW 7) : BW 7 := 
 received - syndrome_to_error_vector (H × received)
 
+/-- A tactic for finding the location of an error in a binary word. -/
 meta def find_error : tactic unit :=
 `[
   simp at *,
@@ -130,6 +149,9 @@ meta def find_error : tactic unit :=
     }
 ]
 
+/--
+The error correcting procedure defined above can correct single-bit errors.
+-/
 lemma single_error_correctable (msg : BW 4) (received : BW 7) : 
   d(encode msg, received) = 1 → error_correct received = encode msg := 
 begin

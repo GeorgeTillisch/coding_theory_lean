@@ -4,9 +4,17 @@ import hamming
 import binary_codes
 import algebra.module.submodule
 
+/-!
+# Linear Binary Codes
+
+This file contains the definition of a linear binary code.
+We also use this definition to formalize the Hamming(7,4) code 
+and some of its properties.
+-/
+
 open B BW binary_code
 
-structure binary_linear_code (n M d : ℕ) extends binary_code n M d :=
+structure linear_binary_code (n M d : ℕ) extends binary_code n M d :=
   (is_subspace : subspace B (BW n))
 
 def H74C : finset (BW 7) := {
@@ -31,7 +39,7 @@ def H74C : finset (BW 7) := {
   nodup := by simp,
 }
 
-def hamming74Code : binary_linear_code 7 16 3 :=
+def hamming74Code : linear_binary_code 7 16 3 :=
 {
   cws := H74C,
   has_card_M := rfl,

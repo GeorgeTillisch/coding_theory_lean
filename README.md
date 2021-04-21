@@ -26,7 +26,7 @@ in this directory to setup the project.
 - `binary_codes.lean`
     - Contains the definition of a binary code and the main proofs of the project, see comments in file for more details.
     - All contained in namespace `binary_code`.
-- `binary_linear_codes.lean`
+- `linear_binary_code.lean`
     - Defines an extension of binary codes, linear binary codes.
     - Also contains an example linear code, the Hamming(7,4) code, and contains proofs of some basic properties of this code.
 - `syndrome_decoding.lean`

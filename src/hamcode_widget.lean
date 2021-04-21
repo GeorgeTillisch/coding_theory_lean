@@ -4,6 +4,15 @@ open B BW
 open hamming_code
 open widget
 
+
+/-!
+# A widget for expoloring the Hamming(7,4) code.
+
+Requires Lean extension for VSCode.
+Click on the `#html` command to see the widget in the infoview panel.
+(The widget looks best on a dark theme)
+-/
+
 variables {π α : Type}
 
 def get_ith : Π {n : ℕ} (i : ℕ), BW n → string
