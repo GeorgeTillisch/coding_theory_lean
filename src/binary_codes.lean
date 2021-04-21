@@ -2,6 +2,27 @@ import tactic
 import binary
 import hamming
 
+/-!
+# Binary Codes
+
+This file contains the definition of a binary code 
+and several theorems relating to properties of binary codes.
+
+## Main Results
+
+- `s_error_detecting_iff_min_distance_gt_s` : 
+  A code C is s-error-detecting if and only if d(C) > s.
+- `t_error_correcting_iff_min_distance_gte` :
+  A code C is t-error-correcting if and only if d(C) ≥ 2t + 1.
+- `hamming_bound` : 
+  Establishes a bound on the number of codewords in an error-correcting code.
+
+## Notation
+
+- `|C|` for the number of codewords in a code `C`.
+- `d(C)` for the minimum distance of a codeword `C`.
+-/
+
 open B BW
 
 def min_distance {n : ℕ} (C : finset (BW n)) (h : C.card ≥ 2) : ℕ :=
@@ -53,13 +74,20 @@ begin
   exact ⟨hneq, h_dist⟩,
 end
 
+/--
+A code C is s-error-detecting if, 
+whenever a codeword has incurred at least one but at most s errors, 
+the resulting word is not a codeword.
+-/
 def error_detecting (C : binary_code n M d) (s : ℕ) : Prop := 
 ∀ (x : BW n) (c ∈ C), (d(x,c) ≥ 1 ∧ d(x,c) ≤ s) → x ∉ C
 
-theorem s_error_detecting_iff_min_distance_gt_s (s : ℕ) : C.error_detecting s ↔ d(C) > s :=
+theorem s_error_detecting_iff_min_distance_gt_s (s : ℕ) : 
+  C.error_detecting s ↔ d(C) > s :=
 begin
   unfold error_detecting,
   split,
+  -- Proof that d(C) ≤ s ⇒ not s-error-detecting.
     {contrapose,
     simp,
     intro h_min_dist,
@@ -70,6 +98,7 @@ begin
     existsi [x, y],
     exact ⟨hy, h_gte_1, h_lte_s, hx⟩,
     },
+  -- Proof that d(C) > s ⇒ s-error-detecting 
     {intros h x c hc hdist,
     intro hx,
     by_cases heq : x = c,
@@ -81,7 +110,20 @@ begin
     },
 end
 
+/--
+A code C is t-error-correcting if the minimum distance
+decoding rule can be used to correct t or fewer errors.
+The minimum distance decoding rule will decode x to c ∈ C 
+if the distance between x and c is smaller than the distance
+between x and any other codeword in C.
+-/
+def error_correcting (C : binary_code n M d) (t : ℕ) : Prop := 
+∀ (c ∈ C) (x : BW n), d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c'))
 
+/--
+Given two words x and y, constructs a new word z
+by flipping the first t bits of x that disagree with y.
+-/
 def change_t_disagreements : Π {n : ℕ}, ℕ → BW n → BW n → BW n
 | _ _     nil         nil       := nil
 | _ 0     (xhd::ᴮxtl) (_::ᴮytl) := xhd::ᴮxtl
@@ -128,19 +170,24 @@ end
     {rw change_t_disagreements, simp, apply dist_change_t_disagreements_second_arg}
 end
 
-def error_correcting (C : binary_code n M d) (t : ℕ) : Prop := 
-∀ (c ∈ C) (x : BW n), d(x,c) ≤ t → (∀ (c' ∈ C), c ≠ c' → d(x,c) < d(x,c'))
-
+/--
+Forward direction of t-error-correting ⇔ d(C) ≥ 2t + 1.
+Proof closely follows the structure of the proof given in accompanying report.
+-/
 lemma t_error_correcting_min_distance_gte (t : ℕ) :
   C.error_correcting t → d(C) ≥ 2 * t + 1 :=
 begin
+  -- Suppose that C is t-error-correcting.
   intro h₁,
+  -- For the sake of contradiction, assume that d(C) < 2t + 1
   by_contradiction h₂,
   simp at h₂,
+  -- Then there exist distinct codewords c, c' ∈ C such that d(c, c') = d(C) 
   have h₃ : ∃ (c₁ c₂ ∈ C), c₁ ≠ c₂ ∧ d(c₁,c₂) = d(C),
   from min_distance_pair,
   rcases h₃ with ⟨c, c', hc, hc', ⟨hneq, h_dist_eq_min⟩⟩,
   have h₄ : d(c,c') ≤ 2 * t, by linarith,
+  -- First, we establish via contradiction that t < d(c,c') < 2t.
   have h₅ : d(c, c') ≥ t + 1, 
   by {
     specialize h₁ c hc c',
@@ -154,6 +201,8 @@ begin
     simp at h₁,
     exact h₁,
   },
+  -- Now, we construct a new word x by 
+  -- flipping the first t bits of c that disagree with c'.
   have h₆ : ∃ (x : BW n), 1 ≤ d(x,c') ∧ d(x,c') ≤ d(x,c) ∧ d(x,c) = t,
   by {
     use change_t_disagreements t c c',
@@ -174,12 +223,20 @@ begin
       exact h₄,},
       {linarith}
   },
+  -- But the properties of this word contradict C being t-error-correcting.
+  -- Hence, d(C) ≥ 2t + 1.
   rcases h₆ with ⟨x, ⟨h_dxgt1, h_dxc'_le_dxc, h_dxc_eq_t⟩⟩,
   have h_dxc_le_t : d(x,c) ≤ t, by linarith,
   specialize h₁ c hc x h_dxc_le_t c' hc' hneq,
   linarith,
 end
 
+/--
+We now present two proofs for
+the backward direction of t-error-correting ⇔ d(C) ≥ 2t + 1.
+In the second proof, we prove the contraposative and 
+the resulting proof is slightly simpler.
+-/
 lemma min_distance_gte_t_error_correcting' (t : ℕ) :
   d(C) ≥ 2 * t + 1 → C.error_correcting t :=
 begin
@@ -198,8 +255,6 @@ begin
   ...          > d(x,c)               : by linarith,
 end
 
--- Proof of the contropositive, 
--- which is a simpler informal proof and slightly simpler formal proof.
 lemma min_distance_gte_t_error_correcting (t : ℕ) :
   d(C) ≥ 2 * t + 1 → C.error_correcting t :=
 begin
@@ -222,12 +277,23 @@ iff.intro
 
 open_locale big_operators
 
+/-! 
+In the remainder of this file, we build up a proof of the Hamming bound.
+When reading this code, it may actually be easier to start at the end and
+work backwards, because the order of presentation goes from low-level
+details to high-level proofs.
+
+Note: Indices are numbered from 1.
+-/
+
+/-- The set {1,…,n} -/
 def indices (n : ℕ) : finset ℕ := finset.erase (finset.range (n + 1)) 0
 
 @[simp]
 lemma indices_card_eq_word_size (n : ℕ) : (indices n).card = n :=
 by {rw [indices, finset.card_erase_of_mem], simp, simp}
 
+/-- Map a binary word x to a set of indices at which xᵢ ≠ 0 -/
 def bw_to_nonzero_indices : Π {n : ℕ}, BW n → finset ℕ
 | 0 nil      := finset.empty
 | n (O::ᴮtl) := bw_to_nonzero_indices tl
@@ -260,6 +326,10 @@ begin
   contradiction
 end
 
+/--
+The weight of a word x is the same as 
+the cardinality of the set of indices at which xᵢ ≠ 0.
+-/
 lemma weight_eq_card_nonzero_indices (x : BW n) :
   wt(x) = (bw_to_nonzero_indices x).card :=
 begin
@@ -287,6 +357,11 @@ begin
   exact finset.erase_subset_erase 0 h,
 end
 
+/--
+Given a word x
+the set of indices at which xᵢ ≠ 0 is a subset of 
+all indices of the word, i.e. the set {1,…,n}.
+-/
 lemma nonzero_indices_subset_indices (x : BW n) : 
  (bw_to_nonzero_indices x) ⊆ (indices n) :=
 begin
@@ -302,6 +377,10 @@ begin
     exact finset.subset.trans ih h},
 end
 
+/--
+Given a set representing some nonzero indices in a binary word,
+construct the unique binary word that produced this set of nonzero indices.
+-/
 def nonzero_indices_to_bw : Π (n : ℕ), finset ℕ → BW n
 | 0     s := nil
 | (n+1) s :=
@@ -310,7 +389,8 @@ def nonzero_indices_to_bw : Π (n : ℕ), finset ℕ → BW n
   else
     (O::ᴮnonzero_indices_to_bw n s)
 
-lemma erase_last_index_subset {s : finset ℕ} : s ⊆ indices (n + 1) → s.erase (n + 1) ⊆ indices n :=
+lemma erase_last_index_subset {s : finset ℕ} : 
+  s ⊆ indices (n + 1) → s.erase (n + 1) ⊆ indices n :=
 begin
   unfold indices,
   intros h i hi,
@@ -325,7 +405,7 @@ begin
 end
 
 lemma last_index_not_mem_subset {s : finset ℕ} : 
- s ⊆ indices (n + 1) → n + 1 ∉ s → s ⊆ indices n :=
+  s ⊆ indices (n + 1) → n + 1 ∉ s → s ⊆ indices n :=
 begin
   unfold indices,
   intros h h' i hi,
@@ -358,7 +438,8 @@ begin
 end
 
 lemma all_nonzero_indices_eq_powerset_indices :
-  finset.image (λ v : BW n, bw_to_nonzero_indices v) finset.univ = (indices n).powerset :=
+  finset.image (λ v : BW n, bw_to_nonzero_indices v) finset.univ = 
+  (indices n).powerset :=
 begin
   simp, ext,
   split,
@@ -376,6 +457,10 @@ begin
   rw [finset.powerset_len_eq_filter, all_nonzero_indices_eq_powerset_indices],
 end
 
+/--
+If the sets of nonzero indices of two binary words are equal,
+then the binary words are equal.
+-/
 lemma eq_nonzero_indices_eq_words (a b : BW n) : 
   bw_to_nonzero_indices a = bw_to_nonzero_indices b → a = b :=
 begin
@@ -436,12 +521,17 @@ begin
 end
 
 lemma card_nonzero_indices (w : ℕ) (h : w ≤ n) :
-  (finset.filter (λ v : BW n, (bw_to_nonzero_indices v).card = w) finset.univ).card = n.choose w :=
+  (finset.filter 
+    (λ v : BW n, (bw_to_nonzero_indices v).card = w) finset.univ).card = 
+  n.choose w :=
 begin
   rw [filter_size_same_as_size_filter, nonzero_indices_eq_powerset_len],
   simp, exact h,
 end 
 
+/--
+This is the key lemma for the proof of sphere size.
+-/
 lemma num_words_with_weight (w : ℕ) (h : w ≤ n): 
   (finset.filter (λ v : BW n, wt(v) = w) finset.univ).card = n.choose w :=
 begin
@@ -450,10 +540,17 @@ begin
   exact card_nonzero_indices w h,
 end
 
-
+/--
+Given a word c and radius r, 
+this is set {x ∈ ℬⁿ | d(c,x) = r}
+-/
 def words_at_dist (c : BW n) (r : ℕ) : finset (BW n) :=
 finset.filter (λ v, d(c, v) = r) finset.univ
 
+/--
+Given a word c and radius r, 
+this is set {x ∈ ℬⁿ | d(c,x) ≤ r}
+-/
 def sphere (c : BW n) (r : ℕ) : finset (BW n) := 
 finset.filter (λ v, d(c, v) ≤ r) finset.univ
 
@@ -534,6 +631,11 @@ begin
     {exact h},
 end
 
+/--
+Let c ∈ ℬⁿ be a binary word of length n and let r ∈ ℕ be such that r ≤ n.
+Then, 
+|{x ∈ ℬⁿ | d(c,x) ≤ r}| = n.choose 0 + n.choose 1 + … + n.choose r
+-/
 lemma sphere_size (c : BW n) (r : ℕ) (h : r ≤ n) : 
   (sphere c r).card = ∑ i in (finset.range (r + 1)), n.choose i :=
 begin
@@ -546,7 +648,12 @@ begin
   linarith,
 end
 
-lemma t_error_correcting_spheres_disjoint (t : ℕ) (t_error_correcting : C.error_correcting t) :
+/--
+Let C be a t-error-correcting code.
+Then, the spheres for any distinct codewords are disjoint.
+-/
+lemma t_error_correcting_spheres_disjoint (t : ℕ) 
+  (t_error_correcting : C.error_correcting t) :
   ∀ (c₁ c₂ ∈ C), c₁ ≠ c₂ → disjoint (sphere c₁ t) (sphere c₂ t) :=
 begin
   rw t_error_correcting_iff_min_distance_gte at t_error_correcting,
@@ -563,6 +670,8 @@ begin
   have h₃ : d(C) ≤ d(c₁,c₂), from dist_neq_codewords_gte_min_distance c₁ c₂ hc₁ hc₂ hne,
   linarith,
 end
+
+/-! We combine the next two lemmas to prove the Hamming bound. -/
 
 lemma codeword_sphere_union_card (t : ℕ) (ht : t ≤ n)
   (t_error_correcting : C.error_correcting t) :
@@ -589,10 +698,15 @@ lemma codeword_sphere_union_card_le_univ_card (t : ℕ) (ht : t ≤ n)
   (t_error_correcting : C.error_correcting t) :
   (finset.bUnion C.cws (λ c, sphere c t)).card ≤ 2 ^ n :=
 begin 
-  have h : (@finset.univ (BW n) BW.fintype).card = 2 ^ n, by {rw finset.card_univ, simp},
+  have h : (@finset.univ (BW n) BW.fintype).card = 2 ^ n, 
+  by {rw finset.card_univ, simp},
   rw ← h, apply finset.card_le_of_subset, rw finset.subset_iff, simp,
 end
 
+/--
+The Hamming bound (Sphere-Packing bound) for a t-error-correcting code.
+|C| ≤ 2ⁿ / (n.choose 0 + n.choose 1 + … + n.choose t)
+-/
 theorem hamming_bound (t : ℕ) (ht : t ≤ n)
   (t_error_correcting : C.error_correcting t) :
   |C| ≤ 2 ^ n / ∑ i in (finset.range (t + 1)), n.choose i :=
@@ -609,6 +723,9 @@ begin
   exact (nat.le_div_iff_mul_le (|C|) (2 ^ n) h₁).mpr h,
 end
 
+/--
+A code is perfect if it attains the Hamming bound.
+-/
 def perfect (C : binary_code n M d) : Prop := 
 |C| = 2 ^ n / ∑ i in (finset.range ((d - 1)/2 + 1)), n.choose i
 
