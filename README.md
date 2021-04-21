@@ -9,6 +9,7 @@ See the [Lean Community Guide](https://leanprover-community.github.io/get_starte
 
 Once installed, run 
 ```
+leanpkg configure
 leanproject build
 leanproject get-mathlib-cache
 ``` 

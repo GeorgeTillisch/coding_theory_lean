@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title></title>
   <style type="text/css">code{white-space: pre;}</style>
-  <link rel="stylesheet" href="github-pandoc.css">
+  <link rel="stylesheet" href="../github-pandoc.css">
   <!--[if lt IE 9]>
     <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
   <![endif]-->
@@ -17,7 +17,8 @@
 <h2 id="setup-installation">Setup &amp; Installation</h2>
 <p>The best way to read this code is using a local installation of Lean. See the <a href="https://leanprover-community.github.io/get_started.html">Lean Community Guide</a> for instructions.</p>
 <p>Once installed, run</p>
-<pre><code>leanproject build
+<pre><code>leanpkg configure
+leanproject build
 leanproject get-mathlib-cache</code></pre>
 <p>in this directory to setup the project.</p>
 <h2 id="project-overview">Project Overview</h2>
@@ -38,7 +39,7 @@ leanproject get-mathlib-cache</code></pre>
 <li>Contains the definition of a binary code and the main proofs of the project, see comments in file for more details.</li>
 <li>All contained in namespace <code>binary_code</code>.</li>
 </ul></li>
-<li><code>binary_linear_codes.lean</code>
+<li><code>linear_binary_code.lean</code>
 <ul>
 <li>Defines an extension of binary codes, linear binary codes.</li>
 <li>Also contains an example linear code, the Hamming(7,4) code, and contains proofs of some basic properties of this code.</li>
