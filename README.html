@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <link rel="stylesheet" href="github-pandoc.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="some-coding-theory-in-lean">Some Coding Theory In Lean</h1>
+<p>This project contains some formalized coding theory, written in <a href="https://leanprover.github.io/">Lean 3</a>. See the accompanying report for more details.</p>
+<h2 id="setup-installation">Setup &amp; Installation</h2>
+<p>The best way to read this code is using a local installation of Lean. See the <a href="https://leanprover-community.github.io/get_started.html">Lean Community Guide</a> for instructions.</p>
+<p>Once installed, run</p>
+<pre><code>leanproject build
+leanproject get-mathlib-cache</code></pre>
+<p>in this directory to setup the project.</p>
+<h2 id="project-overview">Project Overview</h2>
+<ul>
+<li><code>binary.lean</code>
+<ul>
+<li>Contains fundamental definitions: bits, binary words, binary word matrices.</li>
+<li>Namespaces: <code>B</code> for bits, <code>BW</code> for binary words, <code>BWM</code> for binary word matrices.</li>
+</ul></li>
+<li><code>hamming.lean</code>
+<ul>
+<li>Contains definitions of Hamming distance and weight and proofs of basic properties.</li>
+<li>Namespace: <code>hamming</code> so that one can write <code>hamming.distance</code> or <code>hamming.weight</code>.</li>
+<li>Also includes notation for these functions: <code>d(x,y)</code> and <code>wt(x)</code>.</li>
+</ul></li>
+<li><code>binary_codes.lean</code>
+<ul>
+<li>Contains the definition of a binary code and the main proofs of the project, see comments in file for more details.</li>
+<li>All contained in namespace <code>binary_code</code>.</li>
+</ul></li>
+<li><code>binary_linear_codes.lean</code>
+<ul>
+<li>Defines an extension of binary codes, linear binary codes.</li>
+<li>Also contains an example linear code, the Hamming(7,4) code, and contains proofs of some basic properties of this code.</li>
+</ul></li>
+<li><code>syndrome_decoding.lean</code>
+<ul>
+<li>Contains a formalization of the Hamming(7,4) code and a proof that syndrome decoding is a 1-error correcting decoding procedure for this code.</li>
+</ul></li>
+<li><code>qary_codes_example.lean</code>
+<ul>
+<li>Contains examples of the distance and weight functions defined for q-ary words (vectors) and some sample proofs.</li>
+</ul></li>
+<li><code>hamcode_widget.lean</code>
+<ul>
+<li>Contains an interactive widget showing the encoding/decoding procedure for the Hamming(7,4) code.</li>
+<li>See the <a href="https://leanprover-community.github.io/mathlib_docs/init/meta/widget/basic.html">mathlib documentation</a> on widgets for more information.</li>
+</ul></li>
+</ul>
+</body>
+</html>
